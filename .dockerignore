@@ -1,0 +1,15 @@
+.git
+.github
+.codex
+.agents
+tmp
+*.db
+*.dbm
+*.png
+*.test
+*.out
+coverage.*
+swagger/
+.env
+diplomas_crud
+main
