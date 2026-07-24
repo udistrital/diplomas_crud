@@ -1,0 +1,35 @@
+version: '3.4'
+
+services:
+  diplomas_crud:
+    image: golang:1.25-alpine
+    container_name: ${API_NAME}
+    volumes:
+      - go_src:/go
+      - .:/go/src/${API_BASE_DIR}/${API_NAME}
+    environment:
+      - GO111MODULE=on
+    env_file:
+      - .env
+    ports:
+      - "${DIPLOMAS_CRUD_HTTP_PORT}:${DIPLOMAS_CRUD_HTTP_PORT}"
+    working_dir: /go/src
+    command: sh -c 'cd ${API_BASE_DIR}/${API_NAME}; go install github.com/beego/bee/v2@latest; go mod tidy; bee run'
+
+  data_base:
+    container_name: ${DIPLOMAS_LOCAL_DB}
+    image: postgres:16-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${DIPLOMAS_CRUD_PGPORT}:${DIPLOMAS_CRUD_PGPORT}"
+    env_file:
+      - .env
+
+volumes:
+  go_src:
+  postgres_data:
+
+networks:
+  back_end:
+    external: true
