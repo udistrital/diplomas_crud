@@ -24,9 +24,22 @@ profile.cov
 go.work
 go.work.sum
 
+# Beego artifacts
+lastupdate.tmp
+main
+diplomas_crud
+
 # env file
 .env
 
+# Sonar
+.scannerwork/
+
+# Swagger
+swagger/**
+!swagger/swagger.json
+!swagger/swagger.yml
+
 # Editor/IDE
 # .idea/
-# .vscode/
+.vscode/
