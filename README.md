@@ -5,6 +5,10 @@ API CRUD para la primera fase de diplomas digitales.
 Implementa persistencia base para:
 
 - `documento_digital`
+- `diploma_digital`
+- `firma_firmante`
+- `firma_documento`
+- `control_consecutivo_facultad_vigencia`
 - `historico_estado_documento`
 
 ## Estado CI
@@ -79,6 +83,34 @@ POST   /v1/documento_digital/
 GET    /v1/documento_digital/:id
 PUT    /v1/documento_digital/:id
 DELETE /v1/documento_digital/:id
+POST   /v1/documento_digital/:id/estado
+PUT    /v1/documento_digital/:id/uuid
+POST   /v1/documento_digital/:id/firma
+POST   /v1/documento_digital/:id/diploma
+
+GET    /v1/diploma_digital/
+POST   /v1/diploma_digital/
+GET    /v1/diploma_digital/:id
+PUT    /v1/diploma_digital/:id
+DELETE /v1/diploma_digital/:id
+
+GET    /v1/firma_firmante/
+POST   /v1/firma_firmante/
+GET    /v1/firma_firmante/:id
+PUT    /v1/firma_firmante/:id
+DELETE /v1/firma_firmante/:id
+
+GET    /v1/firma_documento/
+POST   /v1/firma_documento/
+GET    /v1/firma_documento/:id
+PUT    /v1/firma_documento/:id
+DELETE /v1/firma_documento/:id
+
+GET    /v1/control_consecutivo_facultad_vigencia/
+POST   /v1/control_consecutivo_facultad_vigencia/
+GET    /v1/control_consecutivo_facultad_vigencia/:id
+PUT    /v1/control_consecutivo_facultad_vigencia/:id
+DELETE /v1/control_consecutivo_facultad_vigencia/:id
 
 GET    /v1/historico_estado_documento/
 POST   /v1/historico_estado_documento/

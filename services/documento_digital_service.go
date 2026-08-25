@@ -14,11 +14,10 @@ var documentoDigitalFilterMap = map[string]string{
 	"id":                    "id",
 	"tipo_documento_id":     "tipo_documento_id",
 	"estado_documento_id":   "estado_documento_id",
-	"tercero_id":            "tercero_id",
+	"tercero_id_estudiante": "tercero_id_estudiante",
 	"programa_academico_id": "programa_academico_id",
 	"periodo_id":            "periodo_id",
 	"vigencia":              "vigencia",
-	"hash_documento":        "hash_documento",
 	"uuid_verificacion":     "uuid_verificacion",
 	"activo":                "activo",
 }
@@ -74,13 +73,11 @@ func (s DocumentoDigitalService) Update(id int64, input *models.DocumentoDigital
 
 	current.TipoDocumentoId = input.TipoDocumentoId
 	current.EstadoDocumentoId = input.EstadoDocumentoId
-	current.TerceroId = input.TerceroId
+	current.TerceroIdEstudiante = input.TerceroIdEstudiante
 	current.ProgramaAcademicoId = input.ProgramaAcademicoId
 	current.PeriodoId = input.PeriodoId
 	current.Vigencia = input.Vigencia
-	current.HashDocumento = input.HashDocumento
 	current.UUIDVerificacion = input.UUIDVerificacion
-	current.Metadata = input.Metadata
 	current.Activo = input.Activo
 
 	o := orm.NewOrm()
