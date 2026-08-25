@@ -5,7 +5,7 @@ import "testing"
 func TestParseQueryFilters(t *testing.T) {
 	t.Parallel()
 
-	filters, err := ParseQueryFilters("activo:true,tercero_id:123,hash_documento:abc")
+	filters, err := ParseQueryFilters("activo:true,tercero_id_estudiante:123,uuid_verificacion:11111111-1111-1111-1111-111111111111")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -14,12 +14,12 @@ func TestParseQueryFilters(t *testing.T) {
 		t.Fatalf("expected activo=true, got %#v", filters["activo"])
 	}
 
-	if filters["tercero_id"] != int64(123) {
-		t.Fatalf("expected tercero_id=123, got %#v", filters["tercero_id"])
+	if filters["tercero_id_estudiante"] != int64(123) {
+		t.Fatalf("expected tercero_id_estudiante=123, got %#v", filters["tercero_id_estudiante"])
 	}
 
-	if filters["hash_documento"] != "abc" {
-		t.Fatalf("expected hash_documento=abc, got %#v", filters["hash_documento"])
+	if filters["uuid_verificacion"] != "11111111-1111-1111-1111-111111111111" {
+		t.Fatalf("expected uuid_verificacion filter, got %#v", filters["uuid_verificacion"])
 	}
 }
 

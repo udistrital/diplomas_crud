@@ -14,7 +14,9 @@ var historicoFilterMap = map[string]string{
 	"id":                   "id",
 	"documento_digital_id": "DocumentoDigital__Id",
 	"estado_nuevo_id":      "estado_nuevo_id",
-	"tercero_id":           "tercero_id",
+	"tercero_id_firmante":  "tercero_id_firmante",
+	"rol_actor_id":         "rol_actor_id",
+	"firma_documento_id":   "FirmaDocumento__Id",
 	"activo":               "activo",
 }
 
@@ -72,9 +74,10 @@ func (s HistoricoEstadoDocumentoService) Update(id int64, input *models.Historic
 	current.DocumentoDigital = input.DocumentoDigital
 	current.EstadoAnteriorId = input.EstadoAnteriorId
 	current.EstadoNuevoId = input.EstadoNuevoId
-	current.TerceroId = input.TerceroId
+	current.TerceroIdFirmante = input.TerceroIdFirmante
+	current.RolActorId = input.RolActorId
+	current.FirmaDocumento = input.FirmaDocumento
 	current.Observacion = input.Observacion
-	current.Metadata = input.Metadata
 	current.Activo = input.Activo
 
 	o := orm.NewOrm()
