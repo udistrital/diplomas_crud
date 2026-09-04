@@ -11,23 +11,23 @@ import (
 )
 
 type CambiarEstadoDocumentoInput struct {
-	EstadoNuevoId     int64  `json:"estado_nuevo_id"`
-	TerceroIdFirmante *int64 `json:"tercero_id_firmante,omitempty"`
-	RolActorId        *int64 `json:"rol_actor_id,omitempty"`
-	FirmaDocumentoId  *int64 `json:"firma_documento_id,omitempty"`
-	Observacion       string `json:"observacion,omitempty"`
+	EstadoNuevoId      int64  `json:"estado_nuevo_id"`
+	DocumentoIdentidad *int64 `json:"documento_identidad,omitempty"`
+	RolActorId         *int64 `json:"rol_actor_id,omitempty"`
+	FirmaDocumentoId   *int64 `json:"firma_documento_id,omitempty"`
+	Observacion        string `json:"observacion,omitempty"`
 }
 
 type ActualizarUUIDDocumentoInput struct {
-	UUIDVerificacion string `json:"uuid_verificacion"`
+	UUIDDocumento string `json:"uuid_documento"`
 }
 
 type RegistrarFirmaDocumentoInput struct {
-	FirmaFirmanteId   *int64 `json:"firma_firmante_id,omitempty"`
-	RolFirmanteId     int64  `json:"rol_firmante_id"`
-	TerceroIdFirmante int64  `json:"tercero_id_firmante"`
-	EstadoFirmadoId   *int64 `json:"estado_firmado_id,omitempty"`
-	Observacion       string `json:"observacion,omitempty"`
+	FirmaFirmanteId    *int64 `json:"firma_firmante_id,omitempty"`
+	RolFirmanteId      int64  `json:"rol_firmante_id"`
+	DocumentoIdentidad int64  `json:"documento_identidad"`
+	EstadoFirmadoId    *int64 `json:"estado_firmado_id,omitempty"`
+	Observacion        string `json:"observacion,omitempty"`
 }
 
 type CrearDiplomaDigitalInput struct {
@@ -35,7 +35,7 @@ type CrearDiplomaDigitalInput struct {
 	Vigencia                int       `json:"vigencia"`
 	FechaGrado              time.Time `json:"fecha_grado"`
 	EstadoDocumentoCreadoId int64     `json:"estado_documento_creado_id"`
-	UUIDVerificacion        *string   `json:"uuid_verificacion,omitempty"`
+	UUIDDocumento           *string   `json:"uuid_documento,omitempty"`
 }
 
 type DocumentoDigitalWorkflowService struct{}
@@ -64,14 +64,14 @@ func (s DocumentoDigitalWorkflowService) CambiarEstado(documentoID int64, input 
 }
 
 func (s DocumentoDigitalWorkflowService) ActualizarUUID(documentoID int64, input *ActualizarUUIDDocumentoInput) (*models.DocumentoDigital, error) {
-	if input.UUIDVerificacion == "" {
-		return nil, errors.New("uuid_verificacion is required")
+	if input.UUIDDocumento == "" {
+		return nil, errors.New("uuid_documento is required")
 	}
 
 	o := orm.NewOrm()
 	result, err := o.Raw(
-		"UPDATE documento_digital SET uuid_verificacion = ?, fecha_modificacion = now() WHERE id = ?",
-		input.UUIDVerificacion,
+		"UPDATE documento_digital SET uuid_documento = ?, fecha_modificacion = now() WHERE id = ?",
+		input.UUIDDocumento,
 		documentoID,
 	).Exec()
 	if err != nil {
@@ -93,8 +93,8 @@ func (s DocumentoDigitalWorkflowService) RegistrarFirma(documentoID int64, input
 	if input.RolFirmanteId == 0 {
 		return nil, errors.New("rol_firmante_id is required")
 	}
-	if input.TerceroIdFirmante == 0 {
-		return nil, errors.New("tercero_id_firmante is required")
+	if input.DocumentoIdentidad == 0 {
+		return nil, errors.New("documento_identidad is required")
 	}
 
 	o := orm.NewOrm()
@@ -110,11 +110,11 @@ func (s DocumentoDigitalWorkflowService) RegistrarFirma(documentoID int64, input
 
 	if input.EstadoFirmadoId != nil {
 		_, err = registrarEstadoDocumentoTx(o, documentoID, &CambiarEstadoDocumentoInput{
-			EstadoNuevoId:     *input.EstadoFirmadoId,
-			TerceroIdFirmante: &input.TerceroIdFirmante,
-			RolActorId:        &input.RolFirmanteId,
-			FirmaDocumentoId:  &firmaID,
-			Observacion:       input.Observacion,
+			EstadoNuevoId:      *input.EstadoFirmadoId,
+			DocumentoIdentidad: &input.DocumentoIdentidad,
+			RolActorId:         &input.RolFirmanteId,
+			FirmaDocumentoId:   &firmaID,
+			Observacion:        input.Observacion,
 		})
 		if err != nil {
 			_ = o.Rollback()
@@ -177,7 +177,7 @@ func registrarEstadoDocumentoTx(o orm.Ormer, documentoID int64, input *CambiarEs
 			documento_digital_id,
 			estado_anterior_id,
 			estado_nuevo_id,
-			tercero_id_firmante,
+			documento_identidad,
 			rol_actor_id,
 			firma_documento_id,
 			observacion
@@ -185,7 +185,7 @@ func registrarEstadoDocumentoTx(o orm.Ormer, documentoID int64, input *CambiarEs
 		documentoID,
 		estadoAnteriorID,
 		input.EstadoNuevoId,
-		nullableInt64(input.TerceroIdFirmante),
+		nullableInt64(input.DocumentoIdentidad),
 		nullableInt64(input.RolActorId),
 		nullableInt64(input.FirmaDocumentoId),
 		input.Observacion,
@@ -210,11 +210,11 @@ func upsertFirmaDocumentoTx(o orm.Ormer, documentoID int64, input *RegistrarFirm
 	var firmaID int64
 	err := o.Raw(
 		`UPDATE firma_documento
-		 SET firma_firmante_id = ?, tercero_id_firmante = ?, activo = true, fecha_modificacion = now()
+		 SET firma_firmante_id = ?, documento_identidad = ?, activo = true, fecha_modificacion = now()
 		 WHERE documento_digital_id = ? AND rol_firmante_id = ? AND activo IS TRUE
 		 RETURNING id`,
 		nullableInt64(input.FirmaFirmanteId),
-		input.TerceroIdFirmante,
+		input.DocumentoIdentidad,
 		documentoID,
 		input.RolFirmanteId,
 	).QueryRow(&firmaID)
@@ -230,12 +230,12 @@ func upsertFirmaDocumentoTx(o orm.Ormer, documentoID int64, input *RegistrarFirm
 			documento_digital_id,
 			firma_firmante_id,
 			rol_firmante_id,
-			tercero_id_firmante
+			documento_identidad
 		) VALUES (?, ?, ?, ?) RETURNING id`,
 		documentoID,
 		nullableInt64(input.FirmaFirmanteId),
 		input.RolFirmanteId,
-		input.TerceroIdFirmante,
+		input.DocumentoIdentidad,
 	).QueryRow(&firmaID)
 	if err != nil {
 		return 0, fmt.Errorf("insert firma_documento documento_digital %d: %w", documentoID, err)
@@ -327,9 +327,9 @@ func crearDiplomaDigitalTx(o orm.Ormer, documentoID int64, input *CrearDiplomaDi
 
 	_, err = o.Raw(
 		`UPDATE documento_digital
-		 SET uuid_verificacion = COALESCE(CAST(? AS uuid), uuid_verificacion), vigencia = COALESCE(vigencia, ?), fecha_modificacion = now()
+		 SET uuid_documento = COALESCE(CAST(? AS uuid), uuid_documento), vigencia = COALESCE(vigencia, ?), fecha_modificacion = now()
 		 WHERE id = ?`,
-		nullableString(input.UUIDVerificacion),
+		nullableString(input.UUIDDocumento),
 		input.Vigencia,
 		documentoID,
 	).Exec()
