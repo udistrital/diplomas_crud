@@ -8,8 +8,10 @@ type ControlConsecutivoFacultadVigencia struct {
 	Vigencia                  int       `orm:"column(vigencia)" json:"vigencia"`
 	UltimoConsecutivoFacultad int       `orm:"column(ultimo_consecutivo_facultad)" json:"ultimo_consecutivo_facultad"`
 	UltimoFolio               int       `orm:"column(ultimo_folio)" json:"ultimo_folio"`
+	UltimoActa                int       `orm:"column(ultimo_acta)" json:"ultimo_acta"`
 	LibroActual               int       `orm:"column(libro_actual)" json:"libro_actual"`
 	FoliosPorLibro            int       `orm:"column(folios_por_libro)" json:"folios_por_libro"`
+	ActasPorFolio             int       `orm:"column(actas_por_folio)" json:"actas_por_folio"`
 	Activo                    bool      `orm:"column(activo)" json:"activo"`
 	FechaCreacion             time.Time `orm:"column(fecha_creacion);auto_now_add;type(timestamp)" json:"fecha_creacion"`
 	FechaModificacion         time.Time `orm:"column(fecha_modificacion);auto_now;type(timestamp)" json:"fecha_modificacion"`

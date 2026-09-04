@@ -18,6 +18,7 @@ var diplomaDigitalFilterMap = map[string]string{
 	"consecutivo_diploma":  "consecutivo_diploma",
 	"consecutivo_facultad": "consecutivo_facultad",
 	"folio":                "folio",
+	"acta":                 "acta",
 	"libro":                "libro",
 	"activo":               "activo",
 }
@@ -78,6 +79,7 @@ func (s DiplomaDigitalService) Update(id int64, input *models.DiplomaDigital) (*
 	current.ConsecutivoDiploma = input.ConsecutivoDiploma
 	current.ConsecutivoFacultad = input.ConsecutivoFacultad
 	current.Folio = input.Folio
+	current.Acta = input.Acta
 	current.Libro = input.Libro
 	current.Activo = input.Activo
 

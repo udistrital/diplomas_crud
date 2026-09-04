@@ -16,8 +16,10 @@ var controlConsecutivoFilterMap = map[string]string{
 	"vigencia":                    "vigencia",
 	"ultimo_consecutivo_facultad": "ultimo_consecutivo_facultad",
 	"ultimo_folio":                "ultimo_folio",
+	"ultimo_acta":                 "ultimo_acta",
 	"libro_actual":                "libro_actual",
 	"folios_por_libro":            "folios_por_libro",
+	"actas_por_folio":             "actas_por_folio",
 	"activo":                      "activo",
 }
 
@@ -28,6 +30,9 @@ func (s ControlConsecutivoFacultadVigenciaService) Create(input *models.ControlC
 	}
 	if input.FoliosPorLibro == 0 {
 		input.FoliosPorLibro = 500
+	}
+	if input.ActasPorFolio == 0 {
+		input.ActasPorFolio = 6
 	}
 
 	o := orm.NewOrm()
@@ -81,8 +86,10 @@ func (s ControlConsecutivoFacultadVigenciaService) Update(id int64, input *model
 	current.Vigencia = input.Vigencia
 	current.UltimoConsecutivoFacultad = input.UltimoConsecutivoFacultad
 	current.UltimoFolio = input.UltimoFolio
+	current.UltimoActa = input.UltimoActa
 	current.LibroActual = input.LibroActual
 	current.FoliosPorLibro = input.FoliosPorLibro
+	current.ActasPorFolio = input.ActasPorFolio
 	current.Activo = input.Activo
 
 	o := orm.NewOrm()
