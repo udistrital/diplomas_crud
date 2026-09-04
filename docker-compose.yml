@@ -14,7 +14,9 @@ services:
     ports:
       - "${DIPLOMAS_CRUD_HTTP_PORT}:${DIPLOMAS_CRUD_HTTP_PORT}"
     working_dir: /go/src
-    command: sh -c 'cd ${API_BASE_DIR}/${API_NAME}; go install github.com/beego/bee/v2@latest; go mod tidy; bee run'
+    command: sh -c 'cd ${API_BASE_DIR}/${API_NAME}; go install github.com/beego/bee@latest; go mod tidy; bee run'
+    networks:
+      - back_end
 
   data_base:
     container_name: ${DIPLOMAS_LOCAL_DB}
@@ -25,6 +27,8 @@ services:
       - "${DIPLOMAS_CRUD_PGPORT}:${DIPLOMAS_CRUD_PGPORT}"
     env_file:
       - .env
+    networks:
+      - back_end
 
 volumes:
   go_src:
