@@ -28,22 +28,22 @@ CREATE TABLE IF NOT EXISTS diplomas.documento_digital (
     programa_academico_id INTEGER,
     periodo_id INTEGER,
     vigencia INTEGER,
-    uuid_verificacion UUID,
+    uuid_documento UUID,
     activo BOOLEAN NOT NULL DEFAULT TRUE,
     fecha_creacion TIMESTAMP NOT NULL DEFAULT now(),
     fecha_modificacion TIMESTAMP NOT NULL DEFAULT now(),
     CONSTRAINT pk_documento_digital PRIMARY KEY (id),
     CONSTRAINT ck_vigencia_documento_digital CHECK (vigencia IS NULL OR vigencia BETWEEN 2000 AND 2200),
-    CONSTRAINT uq_uuid_verificacion_documento_digital UNIQUE (uuid_verificacion)
+    CONSTRAINT uq_uuid_documento_documento_digital UNIQUE (uuid_documento)
 );
 
-COMMENT ON TABLE diplomas.documento_digital IS 'Documento digital asociado al estudiante. Guarda ids externos del SGA, Terceros, parametros y uuid de verificacion entregado por firma_digital para consultar el documento en S3.';
+COMMENT ON TABLE diplomas.documento_digital IS 'Documento digital asociado al estudiante. Guarda ids externos del SGA, Terceros, parametros y uuid_documento entregado por firma_digital para almacenar y consultar el documento en S3.';
 COMMENT ON COLUMN diplomas.documento_digital.tipo_documento_id IS 'Referencia externa al parametro que identifica el tipo de documento. No se define FK por estar en otro servicio/esquema.';
 COMMENT ON COLUMN diplomas.documento_digital.estado_documento_id IS 'Referencia externa al parametro que identifica el estado actual del documento. No se define FK por estar en otro servicio/esquema.';
 COMMENT ON COLUMN diplomas.documento_digital.tercero_id_estudiante IS 'Referencia externa al id del estudiante en Terceros. No se define FK por estar en otro servicio/esquema.';
 COMMENT ON COLUMN diplomas.documento_digital.programa_academico_id IS 'Referencia externa al programa academico en SGA. No se define FK por estar en otro servicio/esquema.';
 COMMENT ON COLUMN diplomas.documento_digital.periodo_id IS 'Referencia externa al periodo academico en SGA. No se define FK por estar en otro servicio/esquema.';
-COMMENT ON COLUMN diplomas.documento_digital.uuid_verificacion IS 'UUID entregado por firma_digital para consultar el documento generado en S3.';
+COMMENT ON COLUMN diplomas.documento_digital.uuid_documento IS 'UUID del documento firmado usado por el sistema consumidor para almacenar y ubicar el archivo.';
 
 CREATE TABLE IF NOT EXISTS diplomas.control_consecutivo_facultad_vigencia (
     id SERIAL NOT NULL,
@@ -96,7 +96,7 @@ COMMENT ON COLUMN diplomas.diploma_digital.libro IS 'Libro por facultad y vigenc
 
 CREATE TABLE IF NOT EXISTS diplomas.firma_firmante (
     id SERIAL NOT NULL,
-    tercero_id_firmante INTEGER NOT NULL,
+    documento_identidad INTEGER NOT NULL,
     enlace_firma UUID NOT NULL,
     activo BOOLEAN NOT NULL DEFAULT TRUE,
     fecha_creacion TIMESTAMP NOT NULL DEFAULT now(),
@@ -106,11 +106,11 @@ CREATE TABLE IF NOT EXISTS diplomas.firma_firmante (
 );
 
 COMMENT ON TABLE diplomas.firma_firmante IS 'Referencia a imagen de firma administrada por Nuxeo o servicio externo de firmas.';
-COMMENT ON COLUMN diplomas.firma_firmante.tercero_id_firmante IS 'Referencia externa al id del firmante en Terceros. No se define FK por estar en otro servicio/esquema.';
+COMMENT ON COLUMN diplomas.firma_firmante.documento_identidad IS 'Documento de identidad del firmante validado contra administrativa_amazon_api.';
 COMMENT ON COLUMN diplomas.firma_firmante.enlace_firma IS 'UUID entregado por servicio externo para consumir la imagen de firma.';
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_firma_firmante_tercero_id_firmante_activo
-ON diplomas.firma_firmante (tercero_id_firmante)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_firma_firmante_documento_identidad_activo
+ON diplomas.firma_firmante (documento_identidad)
 WHERE activo IS TRUE;
 
 CREATE TABLE IF NOT EXISTS diplomas.firma_documento (
@@ -118,7 +118,7 @@ CREATE TABLE IF NOT EXISTS diplomas.firma_documento (
     documento_digital_id INTEGER NOT NULL,
     firma_firmante_id INTEGER,
     rol_firmante_id INTEGER NOT NULL,
-    tercero_id_firmante INTEGER NOT NULL,
+    documento_identidad INTEGER NOT NULL,
     activo BOOLEAN NOT NULL DEFAULT TRUE,
     fecha_creacion TIMESTAMP NOT NULL DEFAULT now(),
     fecha_modificacion TIMESTAMP NOT NULL DEFAULT now(),
@@ -129,7 +129,7 @@ CREATE TABLE IF NOT EXISTS diplomas.firma_documento (
 
 COMMENT ON TABLE diplomas.firma_documento IS 'Registro de firma aplicada a un documento digital. La firma digital, QR, hash y archivo final los administra firma_digital.';
 COMMENT ON COLUMN diplomas.firma_documento.rol_firmante_id IS 'Referencia externa al parametro/rol del actor firmante. No se define FK por estar en otro servicio/esquema.';
-COMMENT ON COLUMN diplomas.firma_documento.tercero_id_firmante IS 'Referencia externa al id del firmante en Terceros. No se define FK por estar en otro servicio/esquema.';
+COMMENT ON COLUMN diplomas.firma_documento.documento_identidad IS 'Documento de identidad del firmante validado contra administrativa_amazon_api.';
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_firma_documento_documento_rol_activo
 ON diplomas.firma_documento (documento_digital_id, rol_firmante_id)
@@ -140,7 +140,7 @@ CREATE TABLE IF NOT EXISTS diplomas.historico_estado_documento (
     documento_digital_id INTEGER NOT NULL,
     estado_anterior_id INTEGER,
     estado_nuevo_id INTEGER NOT NULL,
-    tercero_id_firmante INTEGER,
+    documento_identidad INTEGER,
     rol_actor_id INTEGER,
     firma_documento_id INTEGER,
     observacion CHARACTER VARYING(500),
@@ -155,7 +155,7 @@ CREATE TABLE IF NOT EXISTS diplomas.historico_estado_documento (
 COMMENT ON TABLE diplomas.historico_estado_documento IS 'Auditoria de cambios de estado del documento digital.';
 COMMENT ON COLUMN diplomas.historico_estado_documento.estado_anterior_id IS 'Referencia externa al parametro de estado anterior. No se define FK por estar en otro servicio/esquema.';
 COMMENT ON COLUMN diplomas.historico_estado_documento.estado_nuevo_id IS 'Referencia externa al parametro de estado nuevo. No se define FK por estar en otro servicio/esquema.';
-COMMENT ON COLUMN diplomas.historico_estado_documento.tercero_id_firmante IS 'Referencia externa al id del actor que firma o ejecuta el cambio de estado en Terceros. No se define FK por estar en otro servicio/esquema.';
+COMMENT ON COLUMN diplomas.historico_estado_documento.documento_identidad IS 'Documento de identidad del actor que firma o ejecuta el cambio de estado.';
 COMMENT ON COLUMN diplomas.historico_estado_documento.rol_actor_id IS 'Referencia externa al parametro/rol del actor que ejecuta el cambio. No se define FK por estar en otro servicio/esquema.';
 
 CREATE INDEX IF NOT EXISTS idx_documento_digital_tipo_documento_id
@@ -182,8 +182,8 @@ ON diplomas.control_consecutivo_facultad_vigencia (facultad_id, vigencia);
 CREATE INDEX IF NOT EXISTS idx_diploma_digital_facultad_id_vigencia
 ON diplomas.diploma_digital (facultad_id, vigencia);
 
-CREATE INDEX IF NOT EXISTS idx_firma_firmante_tercero_id_firmante
-ON diplomas.firma_firmante (tercero_id_firmante);
+CREATE INDEX IF NOT EXISTS idx_firma_firmante_documento_identidad
+ON diplomas.firma_firmante (documento_identidad);
 
 CREATE INDEX IF NOT EXISTS idx_firma_firmante_enlace_firma
 ON diplomas.firma_firmante (enlace_firma);
@@ -197,8 +197,8 @@ ON diplomas.historico_estado_documento (documento_digital_id, fecha_creacion DES
 CREATE INDEX IF NOT EXISTS idx_historico_estado_documento_estado_nuevo_id
 ON diplomas.historico_estado_documento (estado_nuevo_id);
 
-CREATE INDEX IF NOT EXISTS idx_historico_estado_documento_tercero_id_firmante
-ON diplomas.historico_estado_documento (tercero_id_firmante);
+CREATE INDEX IF NOT EXISTS idx_historico_estado_documento_documento_identidad
+ON diplomas.historico_estado_documento (documento_identidad);
 `)
 }
 

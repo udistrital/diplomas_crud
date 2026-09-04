@@ -18,7 +18,7 @@ var documentoDigitalFilterMap = map[string]string{
 	"programa_academico_id": "programa_academico_id",
 	"periodo_id":            "periodo_id",
 	"vigencia":              "vigencia",
-	"uuid_verificacion":     "uuid_verificacion",
+	"uuid_documento":        "uuid_documento",
 	"activo":                "activo",
 }
 
@@ -77,7 +77,7 @@ func (s DocumentoDigitalService) Update(id int64, input *models.DocumentoDigital
 	current.ProgramaAcademicoId = input.ProgramaAcademicoId
 	current.PeriodoId = input.PeriodoId
 	current.Vigencia = input.Vigencia
-	current.UUIDVerificacion = input.UUIDVerificacion
+	current.UUIDDocumento = input.UUIDDocumento
 	current.Activo = input.Activo
 
 	o := orm.NewOrm()
