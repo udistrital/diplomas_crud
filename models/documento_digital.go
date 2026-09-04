@@ -12,7 +12,7 @@ type DocumentoDigital struct {
 	ProgramaAcademicoId *int64                      `orm:"column(programa_academico_id);null" json:"programa_academico_id,omitempty"`
 	PeriodoId           *int64                      `orm:"column(periodo_id);null" json:"periodo_id,omitempty"`
 	Vigencia            *int                        `orm:"column(vigencia);null" json:"vigencia,omitempty"`
-	UUIDVerificacion    *string                     `orm:"column(uuid_verificacion);null;unique" json:"uuid_verificacion,omitempty"`
+	UUIDDocumento       *string                     `orm:"column(uuid_documento);null;unique" json:"uuid_documento,omitempty"`
 	Activo              bool                        `orm:"column(activo)" json:"activo"`
 	FechaCreacion       time.Time                   `orm:"column(fecha_creacion);auto_now_add;type(timestamp)" json:"fecha_creacion"`
 	FechaModificacion   time.Time                   `orm:"column(fecha_modificacion);auto_now;type(timestamp)" json:"fecha_modificacion"`
@@ -38,6 +38,6 @@ func (t *DocumentoDigital) TableIndex() [][]string {
 
 func (t *DocumentoDigital) TableUnique() [][]string {
 	return [][]string{
-		{"UUIDVerificacion"},
+		{"UUIDDocumento"},
 	}
 }
