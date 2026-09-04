@@ -13,7 +13,7 @@ type FirmaFirmanteService struct{}
 
 var firmaFirmanteFilterMap = map[string]string{
 	"id":                  "id",
-	"tercero_id_firmante": "tercero_id_firmante",
+	"documento_identidad": "documento_identidad",
 	"enlace_firma":        "enlace_firma",
 	"activo":              "activo",
 }
@@ -24,7 +24,7 @@ func (s FirmaFirmanteService) Create(input *models.FirmaFirmante) (*models.Firma
 
 	var current models.FirmaFirmante
 	err := o.QueryTable(new(models.FirmaFirmante)).
-		Filter("tercero_id_firmante", input.TerceroIdFirmante).
+		Filter("documento_identidad", input.DocumentoIdentidad).
 		Filter("activo", true).
 		One(&current)
 	if err == nil {
@@ -85,7 +85,7 @@ func (s FirmaFirmanteService) Update(id int64, input *models.FirmaFirmante) (*mo
 		return nil, err
 	}
 
-	current.TerceroIdFirmante = input.TerceroIdFirmante
+	current.DocumentoIdentidad = input.DocumentoIdentidad
 	current.EnlaceFirma = input.EnlaceFirma
 	current.Activo = input.Activo
 

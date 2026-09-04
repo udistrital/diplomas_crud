@@ -15,7 +15,7 @@ var firmaDocumentoFilterMap = map[string]string{
 	"documento_digital_id": "DocumentoDigital__Id",
 	"firma_firmante_id":    "FirmaFirmante__Id",
 	"rol_firmante_id":      "rol_firmante_id",
-	"tercero_id_firmante":  "tercero_id_firmante",
+	"documento_identidad":  "documento_identidad",
 	"activo":               "activo",
 }
 
@@ -71,7 +71,7 @@ func (s FirmaDocumentoService) Update(id int64, input *models.FirmaDocumento) (*
 	current.DocumentoDigital = input.DocumentoDigital
 	current.FirmaFirmante = input.FirmaFirmante
 	current.RolFirmanteId = input.RolFirmanteId
-	current.TerceroIdFirmante = input.TerceroIdFirmante
+	current.DocumentoIdentidad = input.DocumentoIdentidad
 	current.Activo = input.Activo
 
 	o := orm.NewOrm()
