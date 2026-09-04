@@ -259,27 +259,30 @@ func crearDiplomaDigitalTx(o orm.Ormer, documentoID int64, input *CrearDiplomaDi
 	var controlID int64
 	var ultimoConsecutivoFacultad int
 	var ultimoFolio int
+	var ultimoActa int
 	var libroActual int
 	var foliosPorLibro int
+	var actasPorFolio int
 	err = o.Raw(
-		`SELECT id, ultimo_consecutivo_facultad, ultimo_folio, libro_actual, folios_por_libro
+		`SELECT id, ultimo_consecutivo_facultad, ultimo_folio, ultimo_acta, libro_actual, folios_por_libro, actas_por_folio
 		 FROM control_consecutivo_facultad_vigencia
 		 WHERE facultad_id = ? AND vigencia = ? AND activo IS TRUE
 		 FOR UPDATE`,
 		input.FacultadId,
 		input.Vigencia,
-	).QueryRow(&controlID, &ultimoConsecutivoFacultad, &ultimoFolio, &libroActual, &foliosPorLibro)
+	).QueryRow(&controlID, &ultimoConsecutivoFacultad, &ultimoFolio, &ultimoActa, &libroActual, &foliosPorLibro, &actasPorFolio)
 	if err != nil {
 		return 0, fmt.Errorf("lock control consecutivo facultad %d vigencia %d: %w", input.FacultadId, input.Vigencia, err)
 	}
 
 	siguienteConsecutivoFacultad := ultimoConsecutivoFacultad + 1
-	siguienteLibro := libroActual
-	siguienteFolio := ultimoFolio + 1
-	if ultimoFolio >= foliosPorLibro {
-		siguienteLibro = libroActual + 1
-		siguienteFolio = 1
-	}
+	siguienteLibro, siguienteFolio, siguienteActa := siguienteUbicacionDiploma(
+		libroActual,
+		ultimoFolio,
+		ultimoActa,
+		foliosPorLibro,
+		actasPorFolio,
+	)
 
 	var consecutivoDiploma int64
 	err = o.Raw("SELECT nextval('diplomas.seq_consecutivo_diploma')").QueryRow(&consecutivoDiploma)
@@ -297,8 +300,9 @@ func crearDiplomaDigitalTx(o orm.Ormer, documentoID int64, input *CrearDiplomaDi
 			consecutivo_diploma,
 			consecutivo_facultad,
 			folio,
+			acta,
 			libro
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
 		documentoID,
 		input.FacultadId,
 		input.Vigencia,
@@ -306,6 +310,7 @@ func crearDiplomaDigitalTx(o orm.Ormer, documentoID int64, input *CrearDiplomaDi
 		consecutivoDiploma,
 		siguienteConsecutivoFacultad,
 		siguienteFolio,
+		siguienteActa,
 		siguienteLibro,
 	).QueryRow(&diplomaID)
 	if err != nil {
@@ -314,10 +319,11 @@ func crearDiplomaDigitalTx(o orm.Ormer, documentoID int64, input *CrearDiplomaDi
 
 	_, err = o.Raw(
 		`UPDATE control_consecutivo_facultad_vigencia
-		 SET ultimo_consecutivo_facultad = ?, ultimo_folio = ?, libro_actual = ?, fecha_modificacion = now()
+		 SET ultimo_consecutivo_facultad = ?, ultimo_folio = ?, ultimo_acta = ?, libro_actual = ?, fecha_modificacion = now()
 		 WHERE id = ?`,
 		siguienteConsecutivoFacultad,
 		siguienteFolio,
+		siguienteActa,
 		siguienteLibro,
 		controlID,
 	).Exec()
@@ -346,6 +352,30 @@ func crearDiplomaDigitalTx(o orm.Ormer, documentoID int64, input *CrearDiplomaDi
 	}
 
 	return diplomaID, nil
+}
+
+func siguienteUbicacionDiploma(libroActual, ultimoFolio, ultimoActa, foliosPorLibro, actasPorFolio int) (int, int, int) {
+	siguienteLibro := libroActual
+	if siguienteLibro == 0 {
+		siguienteLibro = 1
+	}
+
+	siguienteFolio := ultimoFolio
+	if siguienteFolio == 0 {
+		siguienteFolio = 1
+	}
+
+	siguienteActa := ultimoActa + 1
+	if siguienteActa > actasPorFolio {
+		siguienteActa = 1
+		siguienteFolio++
+	}
+	if siguienteFolio > foliosPorLibro {
+		siguienteLibro++
+		siguienteFolio = 1
+	}
+
+	return siguienteLibro, siguienteFolio, siguienteActa
 }
 
 func nullableInt64(value *int64) interface{} {

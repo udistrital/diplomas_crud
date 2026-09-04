@@ -11,6 +11,7 @@ type DiplomaDigital struct {
 	ConsecutivoDiploma  int64             `orm:"column(consecutivo_diploma);unique" json:"consecutivo_diploma"`
 	ConsecutivoFacultad int               `orm:"column(consecutivo_facultad)" json:"consecutivo_facultad"`
 	Folio               int               `orm:"column(folio)" json:"folio"`
+	Acta                int               `orm:"column(acta)" json:"acta"`
 	Libro               int               `orm:"column(libro)" json:"libro"`
 	Activo              bool              `orm:"column(activo)" json:"activo"`
 	FechaCreacion       time.Time         `orm:"column(fecha_creacion);auto_now_add;type(timestamp)" json:"fecha_creacion"`
@@ -32,6 +33,6 @@ func (t *DiplomaDigital) TableUnique() [][]string {
 		{"DocumentoDigital"},
 		{"ConsecutivoDiploma"},
 		{"FacultadId", "Vigencia", "ConsecutivoFacultad"},
-		{"FacultadId", "Vigencia", "Libro", "Folio"},
+		{"FacultadId", "Vigencia", "Libro", "Folio", "Acta"},
 	}
 }

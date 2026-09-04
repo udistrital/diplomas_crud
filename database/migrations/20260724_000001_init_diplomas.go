@@ -51,19 +51,30 @@ CREATE TABLE IF NOT EXISTS diplomas.control_consecutivo_facultad_vigencia (
     vigencia INTEGER NOT NULL,
     ultimo_consecutivo_facultad INTEGER NOT NULL DEFAULT 0,
     ultimo_folio INTEGER NOT NULL DEFAULT 0,
+    ultimo_acta INTEGER NOT NULL DEFAULT 0,
     libro_actual INTEGER NOT NULL DEFAULT 1,
     folios_por_libro INTEGER NOT NULL DEFAULT 500,
+    actas_por_folio INTEGER NOT NULL DEFAULT 6,
     activo BOOLEAN NOT NULL DEFAULT TRUE,
     fecha_creacion TIMESTAMP NOT NULL DEFAULT now(),
     fecha_modificacion TIMESTAMP NOT NULL DEFAULT now(),
     CONSTRAINT pk_control_consecutivo_facultad_vigencia PRIMARY KEY (id),
     CONSTRAINT ck_vigencia_control_consecutivo_facultad_vigencia CHECK (vigencia BETWEEN 2000 AND 2200),
+    CONSTRAINT ck_ultimo_folio_control_consecutivo_facultad_vigencia CHECK (ultimo_folio >= 0),
+    CONSTRAINT ck_ultimo_acta_control_consecutivo_facultad_vigencia CHECK (ultimo_acta >= 0),
+    CONSTRAINT ck_libro_actual_control_consecutivo_facultad_vigencia CHECK (libro_actual > 0),
     CONSTRAINT ck_folios_por_libro_control_consecutivo_facultad_vigencia CHECK (folios_por_libro > 0),
+    CONSTRAINT ck_actas_por_folio_control_consecutivo_facultad_vigencia CHECK (actas_por_folio > 0),
     CONSTRAINT uq_facultad_id_vigencia_control_consecutivo_facultad_vigencia UNIQUE (facultad_id, vigencia)
 );
 
-COMMENT ON TABLE diplomas.control_consecutivo_facultad_vigencia IS 'Control atomico de consecutivo de facultad, folio y libro por facultad/vigencia. facultad_id referencia la facultad del SGA; no se define FK por estar en otro servicio/esquema.';
+COMMENT ON TABLE diplomas.control_consecutivo_facultad_vigencia IS 'Control atomico de consecutivo, libro, folio y acta por facultad/vigencia. Cada facultad maneja libros independientes y la vigencia permite reiniciar la configuracion cuando sea requerido.';
 COMMENT ON COLUMN diplomas.control_consecutivo_facultad_vigencia.facultad_id IS 'Referencia externa a la facultad en SGA. No se define FK por estar en otro servicio/esquema.';
+COMMENT ON COLUMN diplomas.control_consecutivo_facultad_vigencia.ultimo_folio IS 'Ultimo folio usado dentro del libro actual.';
+COMMENT ON COLUMN diplomas.control_consecutivo_facultad_vigencia.ultimo_acta IS 'Ultima acta usada dentro del folio actual.';
+COMMENT ON COLUMN diplomas.control_consecutivo_facultad_vigencia.libro_actual IS 'Libro vigente para la facultad y vigencia.';
+COMMENT ON COLUMN diplomas.control_consecutivo_facultad_vigencia.folios_por_libro IS 'Cantidad parametrizable de folios permitidos por libro.';
+COMMENT ON COLUMN diplomas.control_consecutivo_facultad_vigencia.actas_por_folio IS 'Cantidad parametrizable de actas permitidas por folio. Por defecto son 6.';
 
 CREATE TABLE IF NOT EXISTS diplomas.diploma_digital (
     id SERIAL NOT NULL,
@@ -74,6 +85,7 @@ CREATE TABLE IF NOT EXISTS diplomas.diploma_digital (
     consecutivo_diploma BIGINT NOT NULL,
     consecutivo_facultad INTEGER NOT NULL,
     folio INTEGER NOT NULL,
+    acta INTEGER NOT NULL,
     libro INTEGER NOT NULL,
     activo BOOLEAN NOT NULL DEFAULT TRUE,
     fecha_creacion TIMESTAMP NOT NULL DEFAULT now(),
@@ -84,7 +96,7 @@ CREATE TABLE IF NOT EXISTS diplomas.diploma_digital (
     CONSTRAINT uq_documento_digital_id_diploma_digital UNIQUE (documento_digital_id),
     CONSTRAINT uq_consecutivo_diploma_diploma_digital UNIQUE (consecutivo_diploma),
     CONSTRAINT uq_facultad_id_vigencia_consecutivo_facultad_diploma_digital UNIQUE (facultad_id, vigencia, consecutivo_facultad),
-    CONSTRAINT uq_facultad_id_vigencia_libro_folio_diploma_digital UNIQUE (facultad_id, vigencia, libro, folio)
+    CONSTRAINT uq_facultad_id_vigencia_libro_folio_acta_diploma_digital UNIQUE (facultad_id, vigencia, libro, folio, acta)
 );
 
 COMMENT ON TABLE diplomas.diploma_digital IS 'Datos propios del diploma creado al final del flujo por Rectoria.';
@@ -92,7 +104,8 @@ COMMENT ON COLUMN diplomas.diploma_digital.facultad_id IS 'Referencia externa a 
 COMMENT ON COLUMN diplomas.diploma_digital.consecutivo_diploma IS 'Consecutivo global unico. Se asigna cuando Rectoria crea el diploma.';
 COMMENT ON COLUMN diplomas.diploma_digital.consecutivo_facultad IS 'Consecutivo por facultad y vigencia.';
 COMMENT ON COLUMN diplomas.diploma_digital.folio IS 'Folio por facultad y vigencia.';
-COMMENT ON COLUMN diplomas.diploma_digital.libro IS 'Libro por facultad y vigencia.';
+COMMENT ON COLUMN diplomas.diploma_digital.acta IS 'Acta dentro del folio. Al completar actas_por_folio, el siguiente diploma inicia acta 1 del siguiente folio.';
+COMMENT ON COLUMN diplomas.diploma_digital.libro IS 'Libro por facultad y vigencia. Al completar folios_por_libro, el siguiente diploma inicia un nuevo libro.';
 
 CREATE TABLE IF NOT EXISTS diplomas.firma_firmante (
     id SERIAL NOT NULL,
