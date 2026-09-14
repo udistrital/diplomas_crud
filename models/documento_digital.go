@@ -8,7 +8,7 @@ type DocumentoDigital struct {
 	Id                  int64                       `orm:"column(id);pk;auto" json:"id"`
 	TipoDocumentoId     int64                       `orm:"column(tipo_documento_id)" json:"tipo_documento_id"`
 	EstadoDocumentoId   int64                       `orm:"column(estado_documento_id)" json:"estado_documento_id"`
-	TerceroIdEstudiante int64                       `orm:"column(tercero_id_estudiante)" json:"tercero_id_estudiante"`
+	CodigoEstudiante    int64                       `orm:"column(codigo_estudiante)" json:"codigo_estudiante"`
 	ProgramaAcademicoId *int64                      `orm:"column(programa_academico_id);null" json:"programa_academico_id,omitempty"`
 	PeriodoId           *int64                      `orm:"column(periodo_id);null" json:"periodo_id,omitempty"`
 	Vigencia            *int                        `orm:"column(vigencia);null" json:"vigencia,omitempty"`
@@ -29,7 +29,7 @@ func (t *DocumentoDigital) TableIndex() [][]string {
 	return [][]string{
 		{"TipoDocumentoId"},
 		{"EstadoDocumentoId"},
-		{"TerceroIdEstudiante"},
+		{"CodigoEstudiante"},
 		{"ProgramaAcademicoId"},
 		{"PeriodoId"},
 		{"Vigencia"},

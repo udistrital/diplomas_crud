@@ -15,6 +15,11 @@ var diplomaDigitalFilterMap = map[string]string{
 	"documento_digital_id": "DocumentoDigital__Id",
 	"facultad_id":          "facultad_id",
 	"vigencia":             "vigencia",
+	"titulo_conferido":     "titulo_conferido",
+	"nombre_graduando":     "nombre_graduando",
+	"documento_identidad":  "documento_identidad",
+	"tipo_documento":       "tipo_documento",
+	"municipio_expedicion": "municipio_expedicion",
 	"consecutivo_diploma":  "consecutivo_diploma",
 	"consecutivo_facultad": "consecutivo_facultad",
 	"folio":                "folio",
@@ -76,6 +81,11 @@ func (s DiplomaDigitalService) Update(id int64, input *models.DiplomaDigital) (*
 	current.FacultadId = input.FacultadId
 	current.Vigencia = input.Vigencia
 	current.FechaGrado = input.FechaGrado
+	current.TituloConferido = input.TituloConferido
+	current.NombreGraduando = input.NombreGraduando
+	current.DocumentoIdentidad = input.DocumentoIdentidad
+	current.TipoDocumento = input.TipoDocumento
+	current.MunicipioExpedicion = input.MunicipioExpedicion
 	current.ConsecutivoDiploma = input.ConsecutivoDiploma
 	current.ConsecutivoFacultad = input.ConsecutivoFacultad
 	current.Folio = input.Folio

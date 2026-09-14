@@ -8,6 +8,11 @@ type DiplomaDigital struct {
 	FacultadId          int64             `orm:"column(facultad_id)" json:"facultad_id"`
 	Vigencia            int               `orm:"column(vigencia)" json:"vigencia"`
 	FechaGrado          time.Time         `orm:"column(fecha_grado);type(date)" json:"fecha_grado"`
+	TituloConferido     string            `orm:"column(titulo_conferido);size(500)" json:"titulo_conferido"`
+	NombreGraduando     string            `orm:"column(nombre_graduando);size(300)" json:"nombre_graduando"`
+	DocumentoIdentidad  string            `orm:"column(documento_identidad);size(50)" json:"documento_identidad"`
+	TipoDocumento       string            `orm:"column(tipo_documento);size(20);null" json:"tipo_documento,omitempty"`
+	MunicipioExpedicion string            `orm:"column(municipio_expedicion);size(150);null" json:"municipio_expedicion,omitempty"`
 	ConsecutivoDiploma  int64             `orm:"column(consecutivo_diploma);unique" json:"consecutivo_diploma"`
 	ConsecutivoFacultad int               `orm:"column(consecutivo_facultad)" json:"consecutivo_facultad"`
 	Folio               int               `orm:"column(folio)" json:"folio"`

@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS diplomas.documento_digital (
     id SERIAL NOT NULL,
     tipo_documento_id INTEGER NOT NULL,
     estado_documento_id INTEGER NOT NULL,
-    tercero_id_estudiante INTEGER NOT NULL,
+    codigo_estudiante BIGINT NOT NULL,
     programa_academico_id INTEGER,
     periodo_id INTEGER,
     vigencia INTEGER,
@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS diplomas.documento_digital (
 COMMENT ON TABLE diplomas.documento_digital IS 'Documento digital asociado al estudiante. Guarda ids externos del SGA, Terceros, parametros y uuid_documento entregado por firma_digital para almacenar y consultar el documento en S3.';
 COMMENT ON COLUMN diplomas.documento_digital.tipo_documento_id IS 'Referencia externa al parametro que identifica el tipo de documento. No se define FK por estar en otro servicio/esquema.';
 COMMENT ON COLUMN diplomas.documento_digital.estado_documento_id IS 'Referencia externa al parametro que identifica el estado actual del documento. No se define FK por estar en otro servicio/esquema.';
-COMMENT ON COLUMN diplomas.documento_digital.tercero_id_estudiante IS 'Referencia externa al id del estudiante en Terceros. No se define FK por estar en otro servicio/esquema.';
+COMMENT ON COLUMN diplomas.documento_digital.codigo_estudiante IS 'Codigo academico del estudiante aprobado a grado.';
 COMMENT ON COLUMN diplomas.documento_digital.programa_academico_id IS 'Referencia externa al programa academico en SGA. No se define FK por estar en otro servicio/esquema.';
 COMMENT ON COLUMN diplomas.documento_digital.periodo_id IS 'Referencia externa al periodo academico en SGA. No se define FK por estar en otro servicio/esquema.';
 COMMENT ON COLUMN diplomas.documento_digital.uuid_documento IS 'UUID del documento firmado usado por el sistema consumidor para almacenar y ubicar el archivo.';
@@ -82,6 +82,11 @@ CREATE TABLE IF NOT EXISTS diplomas.diploma_digital (
     facultad_id INTEGER NOT NULL,
     vigencia INTEGER NOT NULL,
     fecha_grado DATE NOT NULL,
+    titulo_conferido CHARACTER VARYING(500) NOT NULL,
+    nombre_graduando CHARACTER VARYING(300) NOT NULL,
+    documento_identidad CHARACTER VARYING(50) NOT NULL,
+    tipo_documento CHARACTER VARYING(20),
+    municipio_expedicion CHARACTER VARYING(150),
     consecutivo_diploma BIGINT NOT NULL,
     consecutivo_facultad INTEGER NOT NULL,
     folio INTEGER NOT NULL,
@@ -101,6 +106,11 @@ CREATE TABLE IF NOT EXISTS diplomas.diploma_digital (
 
 COMMENT ON TABLE diplomas.diploma_digital IS 'Datos propios del diploma creado al final del flujo por Rectoria.';
 COMMENT ON COLUMN diplomas.diploma_digital.facultad_id IS 'Referencia externa a la facultad en SGA. No se define FK por estar en otro servicio/esquema.';
+COMMENT ON COLUMN diplomas.diploma_digital.titulo_conferido IS 'Texto del titulo conferido en el diploma.';
+COMMENT ON COLUMN diplomas.diploma_digital.nombre_graduando IS 'Nombre completo del graduando impreso en el diploma.';
+COMMENT ON COLUMN diplomas.diploma_digital.documento_identidad IS 'Numero de documento del graduando impreso en el diploma.';
+COMMENT ON COLUMN diplomas.diploma_digital.tipo_documento IS 'Abreviatura o tipo de documento del graduando.';
+COMMENT ON COLUMN diplomas.diploma_digital.municipio_expedicion IS 'Municipio de expedicion del documento del graduando.';
 COMMENT ON COLUMN diplomas.diploma_digital.consecutivo_diploma IS 'Consecutivo global unico. Se asigna cuando Rectoria crea el diploma.';
 COMMENT ON COLUMN diplomas.diploma_digital.consecutivo_facultad IS 'Consecutivo por facultad y vigencia.';
 COMMENT ON COLUMN diplomas.diploma_digital.folio IS 'Folio por facultad y vigencia.';
@@ -177,8 +187,8 @@ ON diplomas.documento_digital (tipo_documento_id);
 CREATE INDEX IF NOT EXISTS idx_documento_digital_estado_documento_id
 ON diplomas.documento_digital (estado_documento_id);
 
-CREATE INDEX IF NOT EXISTS idx_documento_digital_tercero_id_estudiante
-ON diplomas.documento_digital (tercero_id_estudiante);
+CREATE INDEX IF NOT EXISTS idx_documento_digital_codigo_estudiante
+ON diplomas.documento_digital (codigo_estudiante);
 
 CREATE INDEX IF NOT EXISTS idx_documento_digital_programa_academico_id
 ON diplomas.documento_digital (programa_academico_id);

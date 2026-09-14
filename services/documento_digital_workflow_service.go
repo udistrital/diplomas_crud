@@ -3,6 +3,7 @@ package services
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/astaxie/beego/orm"
@@ -34,6 +35,11 @@ type CrearDiplomaDigitalInput struct {
 	FacultadId              int64     `json:"facultad_id"`
 	Vigencia                int       `json:"vigencia"`
 	FechaGrado              time.Time `json:"fecha_grado"`
+	TituloConferido         string    `json:"titulo_conferido"`
+	NombreGraduando         string    `json:"nombre_graduando"`
+	DocumentoIdentidad      string    `json:"documento_identidad"`
+	TipoDocumento           string    `json:"tipo_documento,omitempty"`
+	MunicipioExpedicion     string    `json:"municipio_expedicion,omitempty"`
 	EstadoDocumentoCreadoId int64     `json:"estado_documento_creado_id"`
 	UUIDDocumento           *string   `json:"uuid_documento,omitempty"`
 }
@@ -138,6 +144,20 @@ func (s DocumentoDigitalWorkflowService) CrearDiploma(documentoID int64, input *
 	}
 	if input.FechaGrado.IsZero() {
 		return nil, errors.New("fecha_grado is required")
+	}
+	input.TituloConferido = strings.TrimSpace(input.TituloConferido)
+	input.NombreGraduando = strings.TrimSpace(input.NombreGraduando)
+	input.DocumentoIdentidad = strings.TrimSpace(input.DocumentoIdentidad)
+	input.TipoDocumento = strings.TrimSpace(input.TipoDocumento)
+	input.MunicipioExpedicion = strings.TrimSpace(input.MunicipioExpedicion)
+	if input.TituloConferido == "" {
+		return nil, errors.New("titulo_conferido is required")
+	}
+	if input.NombreGraduando == "" {
+		return nil, errors.New("nombre_graduando is required")
+	}
+	if input.DocumentoIdentidad == "" {
+		return nil, errors.New("documento_identidad is required")
 	}
 	if input.EstadoDocumentoCreadoId == 0 {
 		return nil, errors.New("estado_documento_creado_id is required")
@@ -297,16 +317,26 @@ func crearDiplomaDigitalTx(o orm.Ormer, documentoID int64, input *CrearDiplomaDi
 			facultad_id,
 			vigencia,
 			fecha_grado,
+			titulo_conferido,
+			nombre_graduando,
+			documento_identidad,
+			tipo_documento,
+			municipio_expedicion,
 			consecutivo_diploma,
 			consecutivo_facultad,
 			folio,
 			acta,
 			libro
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
 		documentoID,
 		input.FacultadId,
 		input.Vigencia,
 		input.FechaGrado,
+		input.TituloConferido,
+		input.NombreGraduando,
+		input.DocumentoIdentidad,
+		input.TipoDocumento,
+		input.MunicipioExpedicion,
 		consecutivoDiploma,
 		siguienteConsecutivoFacultad,
 		siguienteFolio,
