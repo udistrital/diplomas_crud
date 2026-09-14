@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/astaxie/beego"
+	beego "github.com/beego/beego/v2/server/web"
 )
 
 // LoadDotEnv loads simple KEY=VALUE pairs from .env into process env

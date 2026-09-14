@@ -1,6 +1,6 @@
 package main
 
-import "github.com/astaxie/beego/migration"
+import "github.com/beego/beego/v2/client/orm/migration"
 
 type InitDiplomas20260724 struct {
 	migration.Migration

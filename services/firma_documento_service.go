@@ -3,7 +3,7 @@ package services
 import (
 	"fmt"
 
-	"github.com/astaxie/beego/orm"
+	"github.com/beego/beego/v2/client/orm"
 
 	"github.com/udistrital/diplomas_crud/models"
 )

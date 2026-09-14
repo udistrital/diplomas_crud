@@ -3,7 +3,7 @@ package models
 import (
 	"fmt"
 
-	"github.com/astaxie/beego/orm"
+	"github.com/beego/beego/v2/client/orm"
 )
 
 const defaultDriver = "postgres"

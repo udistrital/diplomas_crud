@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/astaxie/beego/orm"
+	"github.com/beego/beego/v2/client/orm"
 
 	"github.com/udistrital/diplomas_crud/models"
 )
@@ -52,17 +52,18 @@ func (s DocumentoDigitalWorkflowService) CambiarEstado(documentoID int64, input 
 	}
 
 	o := orm.NewOrm()
-	if err := o.Begin(); err != nil {
+	tx, err := o.Begin()
+	if err != nil {
 		return nil, fmt.Errorf("begin cambiar estado: %w", err)
 	}
 
-	historicoID, err := registrarEstadoDocumentoTx(o, documentoID, input)
+	historicoID, err := registrarEstadoDocumentoTx(tx, documentoID, input)
 	if err != nil {
-		_ = o.Rollback()
+		_ = tx.Rollback()
 		return nil, err
 	}
 
-	if err := o.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return nil, fmt.Errorf("commit cambiar estado documento_digital %d: %w", documentoID, err)
 	}
 
@@ -104,18 +105,19 @@ func (s DocumentoDigitalWorkflowService) RegistrarFirma(documentoID int64, input
 	}
 
 	o := orm.NewOrm()
-	if err := o.Begin(); err != nil {
+	tx, err := o.Begin()
+	if err != nil {
 		return nil, fmt.Errorf("begin registrar firma: %w", err)
 	}
 
-	firmaID, err := upsertFirmaDocumentoTx(o, documentoID, input)
+	firmaID, err := upsertFirmaDocumentoTx(tx, documentoID, input)
 	if err != nil {
-		_ = o.Rollback()
+		_ = tx.Rollback()
 		return nil, err
 	}
 
 	if input.EstadoFirmadoId != nil {
-		_, err = registrarEstadoDocumentoTx(o, documentoID, &CambiarEstadoDocumentoInput{
+		_, err = registrarEstadoDocumentoTx(tx, documentoID, &CambiarEstadoDocumentoInput{
 			EstadoNuevoId:      *input.EstadoFirmadoId,
 			DocumentoIdentidad: &input.DocumentoIdentidad,
 			RolActorId:         &input.RolFirmanteId,
@@ -123,12 +125,12 @@ func (s DocumentoDigitalWorkflowService) RegistrarFirma(documentoID int64, input
 			Observacion:        input.Observacion,
 		})
 		if err != nil {
-			_ = o.Rollback()
+			_ = tx.Rollback()
 			return nil, err
 		}
 	}
 
-	if err := o.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return nil, fmt.Errorf("commit registrar firma documento_digital %d: %w", documentoID, err)
 	}
 
@@ -164,24 +166,25 @@ func (s DocumentoDigitalWorkflowService) CrearDiploma(documentoID int64, input *
 	}
 
 	o := orm.NewOrm()
-	if err := o.Begin(); err != nil {
+	tx, err := o.Begin()
+	if err != nil {
 		return nil, fmt.Errorf("begin crear diploma: %w", err)
 	}
 
-	diplomaID, err := crearDiplomaDigitalTx(o, documentoID, input)
+	diplomaID, err := crearDiplomaDigitalTx(tx, documentoID, input)
 	if err != nil {
-		_ = o.Rollback()
+		_ = tx.Rollback()
 		return nil, err
 	}
 
-	if err := o.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return nil, fmt.Errorf("commit crear diploma documento_digital %d: %w", documentoID, err)
 	}
 
 	return DiplomaDigitalService{}.GetByID(diplomaID)
 }
 
-func registrarEstadoDocumentoTx(o orm.Ormer, documentoID int64, input *CambiarEstadoDocumentoInput) (int64, error) {
+func registrarEstadoDocumentoTx(o orm.TxOrmer, documentoID int64, input *CambiarEstadoDocumentoInput) (int64, error) {
 	var estadoAnteriorID int64
 	err := o.Raw(
 		"SELECT estado_documento_id FROM documento_digital WHERE id = ? FOR UPDATE",
@@ -226,7 +229,7 @@ func registrarEstadoDocumentoTx(o orm.Ormer, documentoID int64, input *CambiarEs
 	return historicoID, nil
 }
 
-func upsertFirmaDocumentoTx(o orm.Ormer, documentoID int64, input *RegistrarFirmaDocumentoInput) (int64, error) {
+func upsertFirmaDocumentoTx(o orm.TxOrmer, documentoID int64, input *RegistrarFirmaDocumentoInput) (int64, error) {
 	var firmaID int64
 	err := o.Raw(
 		`UPDATE firma_documento
@@ -264,7 +267,7 @@ func upsertFirmaDocumentoTx(o orm.Ormer, documentoID int64, input *RegistrarFirm
 	return firmaID, nil
 }
 
-func crearDiplomaDigitalTx(o orm.Ormer, documentoID int64, input *CrearDiplomaDigitalInput) (int64, error) {
+func crearDiplomaDigitalTx(o orm.TxOrmer, documentoID int64, input *CrearDiplomaDigitalInput) (int64, error) {
 	_, err := o.Raw(
 		`INSERT INTO control_consecutivo_facultad_vigencia (facultad_id, vigencia)
 		 VALUES (?, ?)
