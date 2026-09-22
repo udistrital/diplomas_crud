@@ -11,21 +11,21 @@ import (
 type DiplomaDigitalService struct{}
 
 var diplomaDigitalFilterMap = map[string]string{
-	"id":                   "id",
-	"documento_digital_id": "DocumentoDigital__Id",
-	"facultad_id":          "facultad_id",
-	"vigencia":             "vigencia",
-	"titulo_conferido":     "titulo_conferido",
-	"nombre_graduando":     "nombre_graduando",
-	"documento_identidad":  "documento_identidad",
-	"tipo_documento":       "tipo_documento",
-	"municipio_expedicion": "municipio_expedicion",
-	"consecutivo_diploma":  "consecutivo_diploma",
-	"consecutivo_facultad": "consecutivo_facultad",
-	"folio":                "folio",
-	"acta":                 "acta",
-	"libro":                "libro",
-	"activo":               "activo",
+	"id":                          "id",
+	"documento_digital_id":        "DocumentoDigital__Id",
+	"facultad_id":                 "facultad_id",
+	"vigencia":                    "vigencia",
+	"titulo_otorgado":             "titulo_otorgado",
+	"nombre_estudiante":           "nombre_estudiante",
+	"tipo_documento_estudiante":   "tipo_documento_estudiante",
+	"numero_documento_estudiante": "numero_documento_estudiante",
+	"municipio_expedicion":        "municipio_expedicion",
+	"consecutivo_diploma":         "consecutivo_diploma",
+	"consecutivo_facultad":        "consecutivo_facultad",
+	"folio":                       "folio",
+	"acta":                        "acta",
+	"libro":                       "libro",
+	"activo":                      "activo",
 }
 
 func (s DiplomaDigitalService) Create(input *models.DiplomaDigital) (*models.DiplomaDigital, error) {
@@ -81,11 +81,11 @@ func (s DiplomaDigitalService) Update(id int64, input *models.DiplomaDigital) (*
 	current.FacultadId = input.FacultadId
 	current.Vigencia = input.Vigencia
 	current.FechaGrado = input.FechaGrado
-	current.TituloConferido = input.TituloConferido
-	current.NombreGraduando = input.NombreGraduando
-	current.DocumentoIdentidad = input.DocumentoIdentidad
-	current.TipoDocumento = input.TipoDocumento
+	current.NombreEstudiante = input.NombreEstudiante
+	current.TipoDocumentoEstudiante = input.TipoDocumentoEstudiante
+	current.NumeroDocumentoEstudiante = input.NumeroDocumentoEstudiante
 	current.MunicipioExpedicion = input.MunicipioExpedicion
+	current.TituloOtorgado = input.TituloOtorgado
 	current.ConsecutivoDiploma = input.ConsecutivoDiploma
 	current.ConsecutivoFacultad = input.ConsecutivoFacultad
 	current.Folio = input.Folio

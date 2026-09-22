@@ -32,16 +32,16 @@ type RegistrarFirmaDocumentoInput struct {
 }
 
 type CrearDiplomaDigitalInput struct {
-	FacultadId              int64     `json:"facultad_id"`
-	Vigencia                int       `json:"vigencia"`
-	FechaGrado              time.Time `json:"fecha_grado"`
-	TituloConferido         string    `json:"titulo_conferido"`
-	NombreGraduando         string    `json:"nombre_graduando"`
-	DocumentoIdentidad      string    `json:"documento_identidad"`
-	TipoDocumento           string    `json:"tipo_documento,omitempty"`
-	MunicipioExpedicion     string    `json:"municipio_expedicion,omitempty"`
-	EstadoDocumentoCreadoId int64     `json:"estado_documento_creado_id"`
-	UUIDDocumento           *string   `json:"uuid_documento,omitempty"`
+	FacultadId                int64     `json:"facultad_id"`
+	Vigencia                  int       `json:"vigencia"`
+	FechaGrado                time.Time `json:"fecha_grado"`
+	NombreEstudiante          string    `json:"nombre_estudiante"`
+	TipoDocumentoEstudiante   string    `json:"tipo_documento_estudiante"`
+	NumeroDocumentoEstudiante string    `json:"numero_documento_estudiante"`
+	MunicipioExpedicion       string    `json:"municipio_expedicion,omitempty"`
+	TituloOtorgado            string    `json:"titulo_otorgado"`
+	EstadoDocumentoCreadoId   int64     `json:"estado_documento_creado_id"`
+	UUIDDocumento             *string   `json:"uuid_documento,omitempty"`
 }
 
 type DocumentoDigitalWorkflowService struct{}
@@ -138,6 +138,12 @@ func (s DocumentoDigitalWorkflowService) RegistrarFirma(documentoID int64, input
 }
 
 func (s DocumentoDigitalWorkflowService) CrearDiploma(documentoID int64, input *CrearDiplomaDigitalInput) (*models.DiplomaDigital, error) {
+	documento, err := DocumentoDigitalService{}.GetByID(documentoID)
+	if err != nil {
+		return nil, err
+	}
+	aplicarDatosDocumentoDigital(input, documento)
+
 	if input.FacultadId == 0 {
 		return nil, errors.New("facultad_id is required")
 	}
@@ -147,19 +153,22 @@ func (s DocumentoDigitalWorkflowService) CrearDiploma(documentoID int64, input *
 	if input.FechaGrado.IsZero() {
 		return nil, errors.New("fecha_grado is required")
 	}
-	input.TituloConferido = strings.TrimSpace(input.TituloConferido)
-	input.NombreGraduando = strings.TrimSpace(input.NombreGraduando)
-	input.DocumentoIdentidad = strings.TrimSpace(input.DocumentoIdentidad)
-	input.TipoDocumento = strings.TrimSpace(input.TipoDocumento)
+	input.NombreEstudiante = strings.TrimSpace(input.NombreEstudiante)
+	input.TipoDocumentoEstudiante = strings.TrimSpace(input.TipoDocumentoEstudiante)
+	input.NumeroDocumentoEstudiante = strings.TrimSpace(input.NumeroDocumentoEstudiante)
 	input.MunicipioExpedicion = strings.TrimSpace(input.MunicipioExpedicion)
-	if input.TituloConferido == "" {
-		return nil, errors.New("titulo_conferido is required")
+	input.TituloOtorgado = strings.TrimSpace(input.TituloOtorgado)
+	if input.NombreEstudiante == "" {
+		return nil, errors.New("nombre_estudiante is required")
 	}
-	if input.NombreGraduando == "" {
-		return nil, errors.New("nombre_graduando is required")
+	if input.TipoDocumentoEstudiante == "" {
+		return nil, errors.New("tipo_documento_estudiante is required")
 	}
-	if input.DocumentoIdentidad == "" {
-		return nil, errors.New("documento_identidad is required")
+	if input.NumeroDocumentoEstudiante == "" {
+		return nil, errors.New("numero_documento_estudiante is required")
+	}
+	if input.TituloOtorgado == "" {
+		return nil, errors.New("titulo_otorgado is required")
 	}
 	if input.EstadoDocumentoCreadoId == 0 {
 		return nil, errors.New("estado_documento_creado_id is required")
@@ -182,6 +191,30 @@ func (s DocumentoDigitalWorkflowService) CrearDiploma(documentoID int64, input *
 	}
 
 	return DiplomaDigitalService{}.GetByID(diplomaID)
+}
+
+func aplicarDatosDocumentoDigital(input *CrearDiplomaDigitalInput, documento *models.DocumentoDigital) {
+	if input.FacultadId == 0 && documento.FacultadId != nil {
+		input.FacultadId = *documento.FacultadId
+	}
+	if input.Vigencia == 0 && documento.Vigencia != nil {
+		input.Vigencia = *documento.Vigencia
+	}
+	if input.NombreEstudiante == "" {
+		input.NombreEstudiante = documento.NombreEstudiante
+	}
+	if input.TipoDocumentoEstudiante == "" {
+		input.TipoDocumentoEstudiante = documento.TipoDocumentoEstudiante
+	}
+	if input.NumeroDocumentoEstudiante == "" {
+		input.NumeroDocumentoEstudiante = documento.NumeroDocumentoEstudiante
+	}
+	if input.MunicipioExpedicion == "" {
+		input.MunicipioExpedicion = documento.MunicipioExpedicion
+	}
+	if input.TituloOtorgado == "" {
+		input.TituloOtorgado = documento.TituloOtorgado
+	}
 }
 
 func registrarEstadoDocumentoTx(o orm.TxOrmer, documentoID int64, input *CambiarEstadoDocumentoInput) (int64, error) {
@@ -320,11 +353,11 @@ func crearDiplomaDigitalTx(o orm.TxOrmer, documentoID int64, input *CrearDiploma
 			facultad_id,
 			vigencia,
 			fecha_grado,
-			titulo_conferido,
-			nombre_graduando,
-			documento_identidad,
-			tipo_documento,
+			nombre_estudiante,
+			tipo_documento_estudiante,
+			numero_documento_estudiante,
 			municipio_expedicion,
+			titulo_otorgado,
 			consecutivo_diploma,
 			consecutivo_facultad,
 			folio,
@@ -335,11 +368,11 @@ func crearDiplomaDigitalTx(o orm.TxOrmer, documentoID int64, input *CrearDiploma
 		input.FacultadId,
 		input.Vigencia,
 		input.FechaGrado,
-		input.TituloConferido,
-		input.NombreGraduando,
-		input.DocumentoIdentidad,
-		input.TipoDocumento,
+		input.NombreEstudiante,
+		input.TipoDocumentoEstudiante,
+		input.NumeroDocumentoEstudiante,
 		input.MunicipioExpedicion,
+		input.TituloOtorgado,
 		consecutivoDiploma,
 		siguienteConsecutivoFacultad,
 		siguienteFolio,

@@ -22,12 +22,18 @@ CREATE SEQUENCE IF NOT EXISTS diplomas.seq_consecutivo_diploma START WITH 1 INCR
 
 CREATE TABLE IF NOT EXISTS diplomas.documento_digital (
     id SERIAL NOT NULL,
-    tipo_documento_id INTEGER NOT NULL,
+    tipo_documento_digital_id INTEGER NOT NULL,
     estado_documento_id INTEGER NOT NULL,
     codigo_estudiante BIGINT NOT NULL,
+    facultad_id INTEGER,
     programa_academico_id INTEGER,
     periodo_id INTEGER,
     vigencia INTEGER,
+    nombre_estudiante CHARACTER VARYING(250),
+    tipo_documento_estudiante CHARACTER VARYING(20),
+    numero_documento_estudiante CHARACTER VARYING(50),
+    municipio_expedicion CHARACTER VARYING(150),
+    titulo_otorgado CHARACTER VARYING(250),
     uuid_documento UUID,
     activo BOOLEAN NOT NULL DEFAULT TRUE,
     fecha_creacion TIMESTAMP NOT NULL DEFAULT now(),
@@ -38,11 +44,17 @@ CREATE TABLE IF NOT EXISTS diplomas.documento_digital (
 );
 
 COMMENT ON TABLE diplomas.documento_digital IS 'Documento digital asociado al estudiante. Guarda ids externos del SGA, Terceros, parametros y uuid_documento entregado por firma_digital para almacenar y consultar el documento en S3.';
-COMMENT ON COLUMN diplomas.documento_digital.tipo_documento_id IS 'Referencia externa al parametro que identifica el tipo de documento. No se define FK por estar en otro servicio/esquema.';
+COMMENT ON COLUMN diplomas.documento_digital.tipo_documento_digital_id IS 'Referencia externa al parametro que identifica el tipo de documento digital emitido: acta de grado, diploma normal o diploma IDE. No se define FK por estar en otro servicio/esquema.';
 COMMENT ON COLUMN diplomas.documento_digital.estado_documento_id IS 'Referencia externa al parametro que identifica el estado actual del documento. No se define FK por estar en otro servicio/esquema.';
 COMMENT ON COLUMN diplomas.documento_digital.codigo_estudiante IS 'Codigo academico del estudiante aprobado a grado.';
+COMMENT ON COLUMN diplomas.documento_digital.facultad_id IS 'Referencia externa a la facultad del estudiante en SGA/Oikos para asignar consecutivos del diploma.';
 COMMENT ON COLUMN diplomas.documento_digital.programa_academico_id IS 'Referencia externa al programa academico en SGA. No se define FK por estar en otro servicio/esquema.';
 COMMENT ON COLUMN diplomas.documento_digital.periodo_id IS 'Referencia externa al periodo academico en SGA. No se define FK por estar en otro servicio/esquema.';
+COMMENT ON COLUMN diplomas.documento_digital.nombre_estudiante IS 'Nombre completo del estudiante consultado desde SGA 1 para preparar la generacion del diploma.';
+COMMENT ON COLUMN diplomas.documento_digital.tipo_documento_estudiante IS 'Tipo de documento de identidad del estudiante consultado desde SGA 1 para preparar la generacion del diploma.';
+COMMENT ON COLUMN diplomas.documento_digital.numero_documento_estudiante IS 'Numero de documento del estudiante consultado desde SGA 1 para preparar la generacion del diploma.';
+COMMENT ON COLUMN diplomas.documento_digital.municipio_expedicion IS 'Municipio de expedicion del documento del estudiante consultado desde SGA 1 para preparar la generacion del diploma.';
+COMMENT ON COLUMN diplomas.documento_digital.titulo_otorgado IS 'Titulo academico otorgado consultado desde SGA 1 para preparar la generacion del diploma.';
 COMMENT ON COLUMN diplomas.documento_digital.uuid_documento IS 'UUID del documento firmado usado por el sistema consumidor para almacenar y ubicar el archivo.';
 
 CREATE TABLE IF NOT EXISTS diplomas.control_consecutivo_facultad_vigencia (
@@ -82,11 +94,11 @@ CREATE TABLE IF NOT EXISTS diplomas.diploma_digital (
     facultad_id INTEGER NOT NULL,
     vigencia INTEGER NOT NULL,
     fecha_grado DATE NOT NULL,
-    titulo_conferido CHARACTER VARYING(500) NOT NULL,
-    nombre_graduando CHARACTER VARYING(300) NOT NULL,
-    documento_identidad CHARACTER VARYING(50) NOT NULL,
-    tipo_documento CHARACTER VARYING(20),
+    nombre_estudiante CHARACTER VARYING(250) NOT NULL,
+    tipo_documento_estudiante CHARACTER VARYING(20) NOT NULL,
+    numero_documento_estudiante CHARACTER VARYING(50) NOT NULL,
     municipio_expedicion CHARACTER VARYING(150),
+    titulo_otorgado CHARACTER VARYING(250) NOT NULL,
     consecutivo_diploma BIGINT NOT NULL,
     consecutivo_facultad INTEGER NOT NULL,
     folio INTEGER NOT NULL,
@@ -97,6 +109,9 @@ CREATE TABLE IF NOT EXISTS diplomas.diploma_digital (
     fecha_modificacion TIMESTAMP NOT NULL DEFAULT now(),
     CONSTRAINT pk_diploma_digital PRIMARY KEY (id),
     CONSTRAINT ck_vigencia_diploma_digital CHECK (vigencia BETWEEN 2000 AND 2200),
+    CONSTRAINT ck_nombre_estudiante_diploma_digital CHECK (btrim(nombre_estudiante) <> ''),
+    CONSTRAINT ck_numero_documento_estudiante_diploma_digital CHECK (btrim(numero_documento_estudiante) <> ''),
+    CONSTRAINT ck_titulo_otorgado_diploma_digital CHECK (btrim(titulo_otorgado) <> ''),
     CONSTRAINT fk_diploma_digital_documento_digital FOREIGN KEY (documento_digital_id) REFERENCES diplomas.documento_digital(id),
     CONSTRAINT uq_documento_digital_id_diploma_digital UNIQUE (documento_digital_id),
     CONSTRAINT uq_consecutivo_diploma_diploma_digital UNIQUE (consecutivo_diploma),
@@ -104,13 +119,13 @@ CREATE TABLE IF NOT EXISTS diplomas.diploma_digital (
     CONSTRAINT uq_facultad_id_vigencia_libro_folio_acta_diploma_digital UNIQUE (facultad_id, vigencia, libro, folio, acta)
 );
 
-COMMENT ON TABLE diplomas.diploma_digital IS 'Datos propios del diploma creado al final del flujo por Rectoria.';
+COMMENT ON TABLE diplomas.diploma_digital IS 'Datos propios del diploma creado al final del flujo por Rectoria. Incluye snapshot minimo de los datos impresos en el diploma para preservar el documento emitido aunque cambien las fuentes externas.';
 COMMENT ON COLUMN diplomas.diploma_digital.facultad_id IS 'Referencia externa a la facultad en SGA. No se define FK por estar en otro servicio/esquema.';
-COMMENT ON COLUMN diplomas.diploma_digital.titulo_conferido IS 'Texto del titulo conferido en el diploma.';
-COMMENT ON COLUMN diplomas.diploma_digital.nombre_graduando IS 'Nombre completo del graduando impreso en el diploma.';
-COMMENT ON COLUMN diplomas.diploma_digital.documento_identidad IS 'Numero de documento del graduando impreso en el diploma.';
-COMMENT ON COLUMN diplomas.diploma_digital.tipo_documento IS 'Abreviatura o tipo de documento del graduando.';
-COMMENT ON COLUMN diplomas.diploma_digital.municipio_expedicion IS 'Municipio de expedicion del documento del graduando.';
+COMMENT ON COLUMN diplomas.diploma_digital.nombre_estudiante IS 'Nombre completo del estudiante tal como queda impreso en el diploma emitido. Se copia desde la fuente academica/personas al momento de emision para trazabilidad historica.';
+COMMENT ON COLUMN diplomas.diploma_digital.tipo_documento_estudiante IS 'Tipo de documento de identidad del estudiante tal como llega desde SGA 1 al momento de emision.';
+COMMENT ON COLUMN diplomas.diploma_digital.numero_documento_estudiante IS 'Numero de documento del estudiante tal como llega desde SGA 1 y queda impreso en el diploma emitido.';
+COMMENT ON COLUMN diplomas.diploma_digital.municipio_expedicion IS 'Municipio de expedicion del documento del estudiante tal como llega desde SGA 1.';
+COMMENT ON COLUMN diplomas.diploma_digital.titulo_otorgado IS 'Titulo academico otorgado tal como llega desde SGA 1 y queda impreso en el diploma emitido.';
 COMMENT ON COLUMN diplomas.diploma_digital.consecutivo_diploma IS 'Consecutivo global unico. Se asigna cuando Rectoria crea el diploma.';
 COMMENT ON COLUMN diplomas.diploma_digital.consecutivo_facultad IS 'Consecutivo por facultad y vigencia.';
 COMMENT ON COLUMN diplomas.diploma_digital.folio IS 'Folio por facultad y vigencia.';
@@ -181,14 +196,27 @@ COMMENT ON COLUMN diplomas.historico_estado_documento.estado_nuevo_id IS 'Refere
 COMMENT ON COLUMN diplomas.historico_estado_documento.documento_identidad IS 'Documento de identidad del actor que firma o ejecuta el cambio de estado.';
 COMMENT ON COLUMN diplomas.historico_estado_documento.rol_actor_id IS 'Referencia externa al parametro/rol del actor que ejecuta el cambio. No se define FK por estar en otro servicio/esquema.';
 
-CREATE INDEX IF NOT EXISTS idx_documento_digital_tipo_documento_id
-ON diplomas.documento_digital (tipo_documento_id);
+CREATE INDEX IF NOT EXISTS idx_documento_digital_tipo_documento_digital_id
+ON diplomas.documento_digital (tipo_documento_digital_id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_documento_digital_tramite_activo
+ON diplomas.documento_digital (
+    tipo_documento_digital_id,
+    codigo_estudiante,
+    COALESCE(programa_academico_id, 0),
+    COALESCE(periodo_id, 0),
+    COALESCE(vigencia, 0)
+)
+WHERE activo IS TRUE;
 
 CREATE INDEX IF NOT EXISTS idx_documento_digital_estado_documento_id
 ON diplomas.documento_digital (estado_documento_id);
 
 CREATE INDEX IF NOT EXISTS idx_documento_digital_codigo_estudiante
 ON diplomas.documento_digital (codigo_estudiante);
+
+CREATE INDEX IF NOT EXISTS idx_documento_digital_facultad_id
+ON diplomas.documento_digital (facultad_id);
 
 CREATE INDEX IF NOT EXISTS idx_documento_digital_programa_academico_id
 ON diplomas.documento_digital (programa_academico_id);
@@ -198,6 +226,9 @@ ON diplomas.documento_digital (periodo_id);
 
 CREATE INDEX IF NOT EXISTS idx_documento_digital_vigencia
 ON diplomas.documento_digital (vigencia);
+
+CREATE INDEX IF NOT EXISTS idx_documento_digital_numero_documento_estudiante
+ON diplomas.documento_digital (numero_documento_estudiante);
 
 CREATE INDEX IF NOT EXISTS idx_control_consecutivo_facultad_vigencia_facultad_id_vigencia
 ON diplomas.control_consecutivo_facultad_vigencia (facultad_id, vigencia);

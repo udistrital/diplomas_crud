@@ -11,25 +11,54 @@ import (
 type DocumentoDigitalService struct{}
 
 var documentoDigitalFilterMap = map[string]string{
-	"id":                    "id",
-	"tipo_documento_id":     "tipo_documento_id",
-	"estado_documento_id":   "estado_documento_id",
-	"codigo_estudiante":     "codigo_estudiante",
-	"programa_academico_id": "programa_academico_id",
-	"periodo_id":            "periodo_id",
-	"vigencia":              "vigencia",
-	"uuid_documento":        "uuid_documento",
-	"activo":                "activo",
+	"id":                          "id",
+	"tipo_documento_digital_id":   "tipo_documento_digital_id",
+	"tipo_documento_id":           "tipo_documento_digital_id",
+	"estado_documento_id":         "estado_documento_id",
+	"codigo_estudiante":           "codigo_estudiante",
+	"facultad_id":                 "facultad_id",
+	"programa_academico_id":       "programa_academico_id",
+	"periodo_id":                  "periodo_id",
+	"vigencia":                    "vigencia",
+	"nombre_estudiante":           "nombre_estudiante",
+	"tipo_documento_estudiante":   "tipo_documento_estudiante",
+	"numero_documento_estudiante": "numero_documento_estudiante",
+	"municipio_expedicion":        "municipio_expedicion",
+	"titulo_otorgado":             "titulo_otorgado",
+	"uuid_documento":              "uuid_documento",
+	"activo":                      "activo",
 }
 
 func (s DocumentoDigitalService) Create(input *models.DocumentoDigital) (*models.DocumentoDigital, error) {
 	input.Activo = true
 	o := orm.NewOrm()
-	id, err := o.Insert(input)
+	tx, err := o.Begin()
 	if err != nil {
+		return nil, fmt.Errorf("begin insert documento_digital: %w", err)
+	}
+
+	id, err := tx.Insert(input)
+	if err != nil {
+		_ = tx.Rollback()
 		return nil, fmt.Errorf("insert documento_digital: %w", err)
 	}
 	input.Id = id
+
+	_, err = tx.Insert(&models.HistoricoEstadoDocumento{
+		DocumentoDigital: &models.DocumentoDigital{Id: id},
+		EstadoNuevoId:    input.EstadoDocumentoId,
+		Observacion:      "Documento digital creado desde estudiantes aprobados para grado",
+		Activo:           true,
+	})
+	if err != nil {
+		_ = tx.Rollback()
+		return nil, fmt.Errorf("insert historico estado inicial documento_digital %d: %w", id, err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("commit insert documento_digital %d: %w", id, err)
+	}
+
 	return input, nil
 }
 
@@ -71,12 +100,18 @@ func (s DocumentoDigitalService) Update(id int64, input *models.DocumentoDigital
 		return nil, err
 	}
 
-	current.TipoDocumentoId = input.TipoDocumentoId
+	current.TipoDocumentoDigitalId = input.TipoDocumentoDigitalId
 	current.EstadoDocumentoId = input.EstadoDocumentoId
 	current.CodigoEstudiante = input.CodigoEstudiante
+	current.FacultadId = input.FacultadId
 	current.ProgramaAcademicoId = input.ProgramaAcademicoId
 	current.PeriodoId = input.PeriodoId
 	current.Vigencia = input.Vigencia
+	current.NombreEstudiante = input.NombreEstudiante
+	current.TipoDocumentoEstudiante = input.TipoDocumentoEstudiante
+	current.NumeroDocumentoEstudiante = input.NumeroDocumentoEstudiante
+	current.MunicipioExpedicion = input.MunicipioExpedicion
+	current.TituloOtorgado = input.TituloOtorgado
 	current.UUIDDocumento = input.UUIDDocumento
 	current.Activo = input.Activo
 
