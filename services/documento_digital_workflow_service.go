@@ -301,53 +301,8 @@ func upsertFirmaDocumentoTx(o orm.TxOrmer, documentoID int64, input *RegistrarFi
 }
 
 func crearDiplomaDigitalTx(o orm.TxOrmer, documentoID int64, input *CrearDiplomaDigitalInput) (int64, error) {
-	_, err := o.Raw(
-		`INSERT INTO control_consecutivo_facultad_vigencia (facultad_id, vigencia)
-		 VALUES (?, ?)
-		 ON CONFLICT (facultad_id, vigencia) DO NOTHING`,
-		input.FacultadId,
-		input.Vigencia,
-	).Exec()
-	if err != nil {
-		return 0, fmt.Errorf("ensure control consecutivo facultad %d vigencia %d: %w", input.FacultadId, input.Vigencia, err)
-	}
-
-	var controlID int64
-	var ultimoConsecutivoFacultad int
-	var ultimoFolio int
-	var ultimoActa int
-	var libroActual int
-	var foliosPorLibro int
-	var actasPorFolio int
-	err = o.Raw(
-		`SELECT id, ultimo_consecutivo_facultad, ultimo_folio, ultimo_acta, libro_actual, folios_por_libro, actas_por_folio
-		 FROM control_consecutivo_facultad_vigencia
-		 WHERE facultad_id = ? AND vigencia = ? AND activo IS TRUE
-		 FOR UPDATE`,
-		input.FacultadId,
-		input.Vigencia,
-	).QueryRow(&controlID, &ultimoConsecutivoFacultad, &ultimoFolio, &ultimoActa, &libroActual, &foliosPorLibro, &actasPorFolio)
-	if err != nil {
-		return 0, fmt.Errorf("lock control consecutivo facultad %d vigencia %d: %w", input.FacultadId, input.Vigencia, err)
-	}
-
-	siguienteConsecutivoFacultad := ultimoConsecutivoFacultad + 1
-	siguienteLibro, siguienteFolio, siguienteActa := siguienteUbicacionDiploma(
-		libroActual,
-		ultimoFolio,
-		ultimoActa,
-		foliosPorLibro,
-		actasPorFolio,
-	)
-
-	var consecutivoDiploma int64
-	err = o.Raw("SELECT nextval('diplomas.seq_consecutivo_diploma')").QueryRow(&consecutivoDiploma)
-	if err != nil {
-		return 0, fmt.Errorf("next consecutivo diploma: %w", err)
-	}
-
 	var diplomaID int64
-	err = o.Raw(
+	err := o.Raw(
 		`INSERT INTO diploma_digital (
 			documento_digital_id,
 			facultad_id,
@@ -357,13 +312,8 @@ func crearDiplomaDigitalTx(o orm.TxOrmer, documentoID int64, input *CrearDiploma
 			tipo_documento_estudiante,
 			numero_documento_estudiante,
 			municipio_expedicion,
-			titulo_otorgado,
-			consecutivo_diploma,
-			consecutivo_facultad,
-			folio,
-			acta,
-			libro
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
+			titulo_otorgado
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
 		documentoID,
 		input.FacultadId,
 		input.Vigencia,
@@ -373,28 +323,23 @@ func crearDiplomaDigitalTx(o orm.TxOrmer, documentoID int64, input *CrearDiploma
 		input.NumeroDocumentoEstudiante,
 		input.MunicipioExpedicion,
 		input.TituloOtorgado,
-		consecutivoDiploma,
-		siguienteConsecutivoFacultad,
-		siguienteFolio,
-		siguienteActa,
-		siguienteLibro,
 	).QueryRow(&diplomaID)
 	if err != nil {
 		return 0, fmt.Errorf("insert diploma_digital documento_digital %d: %w", documentoID, err)
 	}
 
-	_, err = o.Raw(
-		`UPDATE control_consecutivo_facultad_vigencia
-		 SET ultimo_consecutivo_facultad = ?, ultimo_folio = ?, ultimo_acta = ?, libro_actual = ?, fecha_modificacion = now()
-		 WHERE id = ?`,
-		siguienteConsecutivoFacultad,
-		siguienteFolio,
-		siguienteActa,
-		siguienteLibro,
-		controlID,
-	).Exec()
+	var registroID int64
+	var consecutivoFacultad int
+	var numeroLibro int
+	var numeroFolio int
+	var numeroRegistro int
+	err = o.Raw(
+		`SELECT registro_grado_id, consecutivo_facultad_asignado, numero_libro, numero_folio, numero_registro
+		 FROM diplomas.asignar_registro_grado(?)`,
+		diplomaID,
+	).QueryRow(&registroID, &consecutivoFacultad, &numeroLibro, &numeroFolio, &numeroRegistro)
 	if err != nil {
-		return 0, fmt.Errorf("update control consecutivo %d: %w", controlID, err)
+		return 0, fmt.Errorf("asignar registro_grado diploma_digital %d: %w", diplomaID, err)
 	}
 
 	_, err = o.Raw(
@@ -411,37 +356,18 @@ func crearDiplomaDigitalTx(o orm.TxOrmer, documentoID int64, input *CrearDiploma
 
 	_, err = registrarEstadoDocumentoTx(o, documentoID, &CambiarEstadoDocumentoInput{
 		EstadoNuevoId: input.EstadoDocumentoCreadoId,
-		Observacion:   "Diploma creado por Rectoria con consecutivos asignados",
+		Observacion:   "Diploma creado por Rectoria con registro de grado asignado",
 	})
 	if err != nil {
 		return 0, err
 	}
 
+	_ = registroID
+	_ = consecutivoFacultad
+	_ = numeroLibro
+	_ = numeroFolio
+	_ = numeroRegistro
 	return diplomaID, nil
-}
-
-func siguienteUbicacionDiploma(libroActual, ultimoFolio, ultimoActa, foliosPorLibro, actasPorFolio int) (int, int, int) {
-	siguienteLibro := libroActual
-	if siguienteLibro == 0 {
-		siguienteLibro = 1
-	}
-
-	siguienteFolio := ultimoFolio
-	if siguienteFolio == 0 {
-		siguienteFolio = 1
-	}
-
-	siguienteActa := ultimoActa + 1
-	if siguienteActa > actasPorFolio {
-		siguienteActa = 1
-		siguienteFolio++
-	}
-	if siguienteFolio > foliosPorLibro {
-		siguienteLibro++
-		siguienteFolio = 1
-	}
-
-	return siguienteLibro, siguienteFolio, siguienteActa
 }
 
 func nullableInt64(value *int64) interface{} {
