@@ -1,24 +1,22 @@
 package models
 
-import (
-	"fmt"
-
-	"github.com/astaxie/beego/orm"
-)
+import "github.com/beego/beego/v2/client/orm"
 
 const defaultDriver = "postgres"
 
 func MustInitORM() {
-	if err := LoadDotEnv(".env"); err != nil {
-		panic(fmt.Errorf("load .env: %w", err))
-	}
-	SyncEnvToAppConfig()
-
 	orm.RegisterDriver(defaultDriver, orm.DRPostgres)
 	orm.RegisterModel(
 		new(DocumentoDigital),
-		new(ControlConsecutivoFacultadVigencia),
+		new(ParametrizacionRegistroFacultad),
+		new(LibroRegistro),
+		new(FolioRegistro),
+		new(ControlRegistroFacultad),
 		new(DiplomaDigital),
+		new(RegistroGrado),
+		new(CeremoniaGrado),
+		new(CeremoniaFacultadPrograma),
+		new(CeremoniaEstudiante),
 		new(FirmaFirmante),
 		new(FirmaDocumento),
 		new(HistoricoEstadoDocumento),

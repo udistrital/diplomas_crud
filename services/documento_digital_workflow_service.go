@@ -3,9 +3,10 @@ package services
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
-	"github.com/astaxie/beego/orm"
+	"github.com/beego/beego/v2/client/orm"
 
 	"github.com/udistrital/diplomas_crud/models"
 )
@@ -31,11 +32,16 @@ type RegistrarFirmaDocumentoInput struct {
 }
 
 type CrearDiplomaDigitalInput struct {
-	FacultadId              int64     `json:"facultad_id"`
-	Vigencia                int       `json:"vigencia"`
-	FechaGrado              time.Time `json:"fecha_grado"`
-	EstadoDocumentoCreadoId int64     `json:"estado_documento_creado_id"`
-	UUIDDocumento           *string   `json:"uuid_documento,omitempty"`
+	FacultadId                int64     `json:"facultad_id"`
+	Vigencia                  int       `json:"vigencia"`
+	FechaGrado                time.Time `json:"fecha_grado"`
+	NombreEstudiante          string    `json:"nombre_estudiante"`
+	TipoDocumentoEstudiante   string    `json:"tipo_documento_estudiante"`
+	NumeroDocumentoEstudiante string    `json:"numero_documento_estudiante"`
+	MunicipioExpedicion       string    `json:"municipio_expedicion,omitempty"`
+	TituloOtorgado            string    `json:"titulo_otorgado"`
+	EstadoDocumentoCreadoId   int64     `json:"estado_documento_creado_id"`
+	UUIDDocumento             *string   `json:"uuid_documento,omitempty"`
 }
 
 type DocumentoDigitalWorkflowService struct{}
@@ -46,17 +52,18 @@ func (s DocumentoDigitalWorkflowService) CambiarEstado(documentoID int64, input 
 	}
 
 	o := orm.NewOrm()
-	if err := o.Begin(); err != nil {
+	tx, err := o.Begin()
+	if err != nil {
 		return nil, fmt.Errorf("begin cambiar estado: %w", err)
 	}
 
-	historicoID, err := registrarEstadoDocumentoTx(o, documentoID, input)
+	historicoID, err := registrarEstadoDocumentoTx(tx, documentoID, input)
 	if err != nil {
-		_ = o.Rollback()
+		_ = tx.Rollback()
 		return nil, err
 	}
 
-	if err := o.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return nil, fmt.Errorf("commit cambiar estado documento_digital %d: %w", documentoID, err)
 	}
 
@@ -98,18 +105,19 @@ func (s DocumentoDigitalWorkflowService) RegistrarFirma(documentoID int64, input
 	}
 
 	o := orm.NewOrm()
-	if err := o.Begin(); err != nil {
+	tx, err := o.Begin()
+	if err != nil {
 		return nil, fmt.Errorf("begin registrar firma: %w", err)
 	}
 
-	firmaID, err := upsertFirmaDocumentoTx(o, documentoID, input)
+	firmaID, err := upsertFirmaDocumentoTx(tx, documentoID, input)
 	if err != nil {
-		_ = o.Rollback()
+		_ = tx.Rollback()
 		return nil, err
 	}
 
 	if input.EstadoFirmadoId != nil {
-		_, err = registrarEstadoDocumentoTx(o, documentoID, &CambiarEstadoDocumentoInput{
+		_, err = registrarEstadoDocumentoTx(tx, documentoID, &CambiarEstadoDocumentoInput{
 			EstadoNuevoId:      *input.EstadoFirmadoId,
 			DocumentoIdentidad: &input.DocumentoIdentidad,
 			RolActorId:         &input.RolFirmanteId,
@@ -117,12 +125,12 @@ func (s DocumentoDigitalWorkflowService) RegistrarFirma(documentoID int64, input
 			Observacion:        input.Observacion,
 		})
 		if err != nil {
-			_ = o.Rollback()
+			_ = tx.Rollback()
 			return nil, err
 		}
 	}
 
-	if err := o.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return nil, fmt.Errorf("commit registrar firma documento_digital %d: %w", documentoID, err)
 	}
 
@@ -130,6 +138,12 @@ func (s DocumentoDigitalWorkflowService) RegistrarFirma(documentoID int64, input
 }
 
 func (s DocumentoDigitalWorkflowService) CrearDiploma(documentoID int64, input *CrearDiplomaDigitalInput) (*models.DiplomaDigital, error) {
+	documento, err := DocumentoDigitalService{}.GetByID(documentoID)
+	if err != nil {
+		return nil, err
+	}
+	aplicarDatosDocumentoDigital(input, documento)
+
 	if input.FacultadId == 0 {
 		return nil, errors.New("facultad_id is required")
 	}
@@ -139,29 +153,71 @@ func (s DocumentoDigitalWorkflowService) CrearDiploma(documentoID int64, input *
 	if input.FechaGrado.IsZero() {
 		return nil, errors.New("fecha_grado is required")
 	}
+	input.NombreEstudiante = strings.TrimSpace(input.NombreEstudiante)
+	input.TipoDocumentoEstudiante = strings.TrimSpace(input.TipoDocumentoEstudiante)
+	input.NumeroDocumentoEstudiante = strings.TrimSpace(input.NumeroDocumentoEstudiante)
+	input.MunicipioExpedicion = strings.TrimSpace(input.MunicipioExpedicion)
+	input.TituloOtorgado = strings.TrimSpace(input.TituloOtorgado)
+	if input.NombreEstudiante == "" {
+		return nil, errors.New("nombre_estudiante is required")
+	}
+	if input.TipoDocumentoEstudiante == "" {
+		return nil, errors.New("tipo_documento_estudiante is required")
+	}
+	if input.NumeroDocumentoEstudiante == "" {
+		return nil, errors.New("numero_documento_estudiante is required")
+	}
+	if input.TituloOtorgado == "" {
+		return nil, errors.New("titulo_otorgado is required")
+	}
 	if input.EstadoDocumentoCreadoId == 0 {
 		return nil, errors.New("estado_documento_creado_id is required")
 	}
 
 	o := orm.NewOrm()
-	if err := o.Begin(); err != nil {
+	tx, err := o.Begin()
+	if err != nil {
 		return nil, fmt.Errorf("begin crear diploma: %w", err)
 	}
 
-	diplomaID, err := crearDiplomaDigitalTx(o, documentoID, input)
+	diplomaID, err := crearDiplomaDigitalTx(tx, documentoID, input)
 	if err != nil {
-		_ = o.Rollback()
+		_ = tx.Rollback()
 		return nil, err
 	}
 
-	if err := o.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return nil, fmt.Errorf("commit crear diploma documento_digital %d: %w", documentoID, err)
 	}
 
 	return DiplomaDigitalService{}.GetByID(diplomaID)
 }
 
-func registrarEstadoDocumentoTx(o orm.Ormer, documentoID int64, input *CambiarEstadoDocumentoInput) (int64, error) {
+func aplicarDatosDocumentoDigital(input *CrearDiplomaDigitalInput, documento *models.DocumentoDigital) {
+	if input.FacultadId == 0 && documento.FacultadId != nil {
+		input.FacultadId = *documento.FacultadId
+	}
+	if input.Vigencia == 0 && documento.Vigencia != nil {
+		input.Vigencia = *documento.Vigencia
+	}
+	if input.NombreEstudiante == "" {
+		input.NombreEstudiante = documento.NombreEstudiante
+	}
+	if input.TipoDocumentoEstudiante == "" {
+		input.TipoDocumentoEstudiante = documento.TipoDocumentoEstudiante
+	}
+	if input.NumeroDocumentoEstudiante == "" {
+		input.NumeroDocumentoEstudiante = documento.NumeroDocumentoEstudiante
+	}
+	if input.MunicipioExpedicion == "" {
+		input.MunicipioExpedicion = documento.MunicipioExpedicion
+	}
+	if input.TituloOtorgado == "" {
+		input.TituloOtorgado = documento.TituloOtorgado
+	}
+}
+
+func registrarEstadoDocumentoTx(o orm.TxOrmer, documentoID int64, input *CambiarEstadoDocumentoInput) (int64, error) {
 	var estadoAnteriorID int64
 	err := o.Raw(
 		"SELECT estado_documento_id FROM documento_digital WHERE id = ? FOR UPDATE",
@@ -206,7 +262,7 @@ func registrarEstadoDocumentoTx(o orm.Ormer, documentoID int64, input *CambiarEs
 	return historicoID, nil
 }
 
-func upsertFirmaDocumentoTx(o orm.Ormer, documentoID int64, input *RegistrarFirmaDocumentoInput) (int64, error) {
+func upsertFirmaDocumentoTx(o orm.TxOrmer, documentoID int64, input *RegistrarFirmaDocumentoInput) (int64, error) {
 	var firmaID int64
 	err := o.Raw(
 		`UPDATE firma_documento
@@ -244,85 +300,46 @@ func upsertFirmaDocumentoTx(o orm.Ormer, documentoID int64, input *RegistrarFirm
 	return firmaID, nil
 }
 
-func crearDiplomaDigitalTx(o orm.Ormer, documentoID int64, input *CrearDiplomaDigitalInput) (int64, error) {
-	_, err := o.Raw(
-		`INSERT INTO control_consecutivo_facultad_vigencia (facultad_id, vigencia)
-		 VALUES (?, ?)
-		 ON CONFLICT (facultad_id, vigencia) DO NOTHING`,
-		input.FacultadId,
-		input.Vigencia,
-	).Exec()
-	if err != nil {
-		return 0, fmt.Errorf("ensure control consecutivo facultad %d vigencia %d: %w", input.FacultadId, input.Vigencia, err)
-	}
-
-	var controlID int64
-	var ultimoConsecutivoFacultad int
-	var ultimoFolio int
-	var libroActual int
-	var foliosPorLibro int
-	err = o.Raw(
-		`SELECT id, ultimo_consecutivo_facultad, ultimo_folio, libro_actual, folios_por_libro
-		 FROM control_consecutivo_facultad_vigencia
-		 WHERE facultad_id = ? AND vigencia = ? AND activo IS TRUE
-		 FOR UPDATE`,
-		input.FacultadId,
-		input.Vigencia,
-	).QueryRow(&controlID, &ultimoConsecutivoFacultad, &ultimoFolio, &libroActual, &foliosPorLibro)
-	if err != nil {
-		return 0, fmt.Errorf("lock control consecutivo facultad %d vigencia %d: %w", input.FacultadId, input.Vigencia, err)
-	}
-
-	siguienteConsecutivoFacultad := ultimoConsecutivoFacultad + 1
-	siguienteLibro := libroActual
-	siguienteFolio := ultimoFolio + 1
-	if ultimoFolio >= foliosPorLibro {
-		siguienteLibro = libroActual + 1
-		siguienteFolio = 1
-	}
-
-	var consecutivoDiploma int64
-	err = o.Raw("SELECT nextval('diplomas.seq_consecutivo_diploma')").QueryRow(&consecutivoDiploma)
-	if err != nil {
-		return 0, fmt.Errorf("next consecutivo diploma: %w", err)
-	}
-
+func crearDiplomaDigitalTx(o orm.TxOrmer, documentoID int64, input *CrearDiplomaDigitalInput) (int64, error) {
 	var diplomaID int64
-	err = o.Raw(
+	err := o.Raw(
 		`INSERT INTO diploma_digital (
 			documento_digital_id,
 			facultad_id,
 			vigencia,
 			fecha_grado,
-			consecutivo_diploma,
-			consecutivo_facultad,
-			folio,
-			libro
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
+			nombre_estudiante,
+			tipo_documento_estudiante,
+			numero_documento_estudiante,
+			municipio_expedicion,
+			titulo_otorgado
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
 		documentoID,
 		input.FacultadId,
 		input.Vigencia,
 		input.FechaGrado,
-		consecutivoDiploma,
-		siguienteConsecutivoFacultad,
-		siguienteFolio,
-		siguienteLibro,
+		input.NombreEstudiante,
+		input.TipoDocumentoEstudiante,
+		input.NumeroDocumentoEstudiante,
+		input.MunicipioExpedicion,
+		input.TituloOtorgado,
 	).QueryRow(&diplomaID)
 	if err != nil {
 		return 0, fmt.Errorf("insert diploma_digital documento_digital %d: %w", documentoID, err)
 	}
 
-	_, err = o.Raw(
-		`UPDATE control_consecutivo_facultad_vigencia
-		 SET ultimo_consecutivo_facultad = ?, ultimo_folio = ?, libro_actual = ?, fecha_modificacion = now()
-		 WHERE id = ?`,
-		siguienteConsecutivoFacultad,
-		siguienteFolio,
-		siguienteLibro,
-		controlID,
-	).Exec()
+	var registroID int64
+	var consecutivoFacultad int
+	var numeroLibro int
+	var numeroFolio int
+	var numeroRegistro int
+	err = o.Raw(
+		`SELECT registro_grado_id, consecutivo_facultad_asignado, numero_libro, numero_folio, numero_registro
+		 FROM diplomas.asignar_registro_grado(?)`,
+		diplomaID,
+	).QueryRow(&registroID, &consecutivoFacultad, &numeroLibro, &numeroFolio, &numeroRegistro)
 	if err != nil {
-		return 0, fmt.Errorf("update control consecutivo %d: %w", controlID, err)
+		return 0, fmt.Errorf("asignar registro_grado diploma_digital %d: %w", diplomaID, err)
 	}
 
 	_, err = o.Raw(
@@ -339,12 +356,17 @@ func crearDiplomaDigitalTx(o orm.Ormer, documentoID int64, input *CrearDiplomaDi
 
 	_, err = registrarEstadoDocumentoTx(o, documentoID, &CambiarEstadoDocumentoInput{
 		EstadoNuevoId: input.EstadoDocumentoCreadoId,
-		Observacion:   "Diploma creado por Rectoria con consecutivos asignados",
+		Observacion:   "Diploma creado por Rectoria con registro de grado asignado",
 	})
 	if err != nil {
 		return 0, err
 	}
 
+	_ = registroID
+	_ = consecutivoFacultad
+	_ = numeroLibro
+	_ = numeroFolio
+	_ = numeroRegistro
 	return diplomaID, nil
 }
 

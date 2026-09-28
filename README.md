@@ -8,7 +8,14 @@ Implementa persistencia base para:
 - `diploma_digital`
 - `firma_firmante`
 - `firma_documento`
-- `control_consecutivo_facultad_vigencia`
+- `parametrizacion_registro_facultad`
+- `libro_registro`
+- `folio_registro`
+- `control_registro_facultad`
+- `registro_grado`
+- `ceremonia_grado`
+- `ceremonia_facultad_programa`
+- `ceremonia_estudiante`
 - `historico_estado_documento`
 
 ## Estado CI
@@ -45,7 +52,6 @@ Configuración base en [conf/app.conf](conf/app.conf).
 
 ```shell
 cd $GOPATH/src/github.com/udistrital/diplomas_crud
-go get github.com/udistrital/utils_oas@latest
 go mod tidy
 bee run
 ```
@@ -106,11 +112,53 @@ GET    /v1/firma_documento/:id
 PUT    /v1/firma_documento/:id
 DELETE /v1/firma_documento/:id
 
-GET    /v1/control_consecutivo_facultad_vigencia/
-POST   /v1/control_consecutivo_facultad_vigencia/
-GET    /v1/control_consecutivo_facultad_vigencia/:id
-PUT    /v1/control_consecutivo_facultad_vigencia/:id
-DELETE /v1/control_consecutivo_facultad_vigencia/:id
+GET    /v1/parametrizacion_registro_facultad/
+POST   /v1/parametrizacion_registro_facultad/
+GET    /v1/parametrizacion_registro_facultad/:id
+PUT    /v1/parametrizacion_registro_facultad/:id
+DELETE /v1/parametrizacion_registro_facultad/:id
+
+GET    /v1/libro_registro/
+POST   /v1/libro_registro/
+GET    /v1/libro_registro/:id
+PUT    /v1/libro_registro/:id
+DELETE /v1/libro_registro/:id
+
+GET    /v1/folio_registro/
+POST   /v1/folio_registro/
+GET    /v1/folio_registro/:id
+PUT    /v1/folio_registro/:id
+DELETE /v1/folio_registro/:id
+
+GET    /v1/control_registro_facultad/
+POST   /v1/control_registro_facultad/
+GET    /v1/control_registro_facultad/:id
+PUT    /v1/control_registro_facultad/:id
+DELETE /v1/control_registro_facultad/:id
+
+GET    /v1/registro_grado/
+POST   /v1/registro_grado/
+GET    /v1/registro_grado/:id
+PUT    /v1/registro_grado/:id
+DELETE /v1/registro_grado/:id
+
+GET    /v1/ceremonia_grado/
+POST   /v1/ceremonia_grado/
+GET    /v1/ceremonia_grado/:id
+PUT    /v1/ceremonia_grado/:id
+DELETE /v1/ceremonia_grado/:id
+
+GET    /v1/ceremonia_facultad_programa/
+POST   /v1/ceremonia_facultad_programa/
+GET    /v1/ceremonia_facultad_programa/:id
+PUT    /v1/ceremonia_facultad_programa/:id
+DELETE /v1/ceremonia_facultad_programa/:id
+
+GET    /v1/ceremonia_estudiante/
+POST   /v1/ceremonia_estudiante/
+GET    /v1/ceremonia_estudiante/:id
+PUT    /v1/ceremonia_estudiante/:id
+DELETE /v1/ceremonia_estudiante/:id
 
 GET    /v1/historico_estado_documento/
 POST   /v1/historico_estado_documento/
