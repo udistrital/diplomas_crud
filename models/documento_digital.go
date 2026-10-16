@@ -2,7 +2,11 @@ package models
 
 import (
 	"time"
+
+	"github.com/beego/beego/v2/client/orm"
 )
+
+func init() { orm.RegisterModel(new(DocumentoDigital)) }
 
 type DocumentoDigital struct {
 	Id                        int64                       `orm:"column(id);pk;auto" json:"id"`
