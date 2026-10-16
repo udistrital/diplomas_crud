@@ -1,6 +1,12 @@
 package models
 
-import "time"
+import (
+	"time"
+
+	"github.com/beego/beego/v2/client/orm"
+)
+
+func init() { orm.RegisterModel(new(ControlRegistroFacultad)) }
 
 type ControlRegistroFacultad struct {
 	Id                              int64                            `orm:"column(id);pk;auto" json:"id"`
