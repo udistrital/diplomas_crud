@@ -18,6 +18,7 @@ func init() {
 		),
 		beego.NSNamespace("/diploma_digital",
 			beego.NSRouter("/", &controllers.DiplomaDigitalController{}, "get:GetAll;post:Post"),
+			beego.NSRouter("/:id/registro", &controllers.DiplomaDigitalController{}, "post:EnsureRegistroGrado"),
 			beego.NSRouter("/:id", &controllers.DiplomaDigitalController{}, "get:GetOne;put:Put;delete:Delete"),
 		),
 		beego.NSNamespace("/firma_firmante",

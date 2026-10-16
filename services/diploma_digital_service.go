@@ -102,6 +102,48 @@ func (s DiplomaDigitalService) GetByID(id int64) (*models.DiplomaDigital, error)
 	return s.enrichRegistroGrado(item), nil
 }
 
+func (s DiplomaDigitalService) EnsureRegistroGrado(id int64) (*models.DiplomaDigital, error) {
+	if id <= 0 {
+		return nil, errors.New("diploma_digital id is required")
+	}
+
+	current, err := s.GetByID(id)
+	if err != nil {
+		return nil, err
+	}
+	if current.RegistroGrado != nil {
+		return current, nil
+	}
+	if year := current.FechaGrado.Year(); year > 0 && current.Vigencia != year {
+		current.Vigencia = year
+		if _, err := orm.NewOrm().Update(current, "vigencia", "fecha_modificacion"); err != nil {
+			return nil, fmt.Errorf("actualizar vigencia diploma_digital %d: %w", id, err)
+		}
+	}
+
+	o := orm.NewOrm()
+	var registroID int64
+	var consecutivoFacultad int
+	var numeroLibro int
+	var numeroFolio int
+	var numeroRegistro int
+	err = o.Raw(
+		`SELECT registro_grado_id, consecutivo_facultad_asignado, numero_libro, numero_folio, numero_registro
+		 FROM diplomas.asignar_registro_grado(?)`,
+		id,
+	).QueryRow(&registroID, &consecutivoFacultad, &numeroLibro, &numeroFolio, &numeroRegistro)
+	if err != nil {
+		return nil, fmt.Errorf("asignar registro_grado diploma_digital %d: %w", id, err)
+	}
+
+	_ = registroID
+	_ = consecutivoFacultad
+	_ = numeroLibro
+	_ = numeroFolio
+	_ = numeroRegistro
+	return s.GetByID(id)
+}
+
 func (s DiplomaDigitalService) List(rawQuery string) ([]*models.DiplomaDigital, error) {
 	filters, err := ParseQueryFilters(rawQuery)
 	if err != nil {

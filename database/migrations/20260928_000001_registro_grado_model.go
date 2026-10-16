@@ -668,10 +668,7 @@ BEGIN
         v_param.folios_por_libro
     )
 
-    ON CONFLICT (
-        parametrizacion_registro_facultad_id,
-        numero_libro
-    )
+    ON CONFLICT ON CONSTRAINT uq_libro_registro_numero
 
     DO UPDATE
        SET activo = TRUE
@@ -695,10 +692,7 @@ BEGIN
         v_param.registros_por_folio
     )
 
-    ON CONFLICT (
-        libro_registro_id,
-        numero_folio
-    )
+    ON CONFLICT ON CONSTRAINT uq_folio_registro_numero
 
     DO UPDATE
        SET activo = TRUE
@@ -726,9 +720,7 @@ BEGIN
         v_param.registro_inicial - 1
     )
 
-    ON CONFLICT (
-        parametrizacion_registro_facultad_id
-    )
+    ON CONFLICT ON CONSTRAINT uq_control_registro_parametrizacion
     DO NOTHING;
 
 END;
@@ -989,10 +981,7 @@ BEGIN
                 v_param.folios_por_libro
             )
 
-            ON CONFLICT (
-                parametrizacion_registro_facultad_id,
-                numero_libro
-            )
+            ON CONFLICT ON CONSTRAINT uq_libro_registro_numero
 
             DO UPDATE
                SET activo = TRUE
@@ -1018,10 +1007,7 @@ BEGIN
             v_param.registros_por_folio
         )
 
-        ON CONFLICT (
-            libro_registro_id,
-            numero_folio
-        )
+        ON CONFLICT ON CONSTRAINT uq_folio_registro_numero
 
         DO UPDATE
            SET activo = TRUE

@@ -79,6 +79,22 @@ func (c *DiplomaDigitalController) Put() {
 	c.writeJSON(http.StatusOK, item)
 }
 
+func (c *DiplomaDigitalController) EnsureRegistroGrado() {
+	id, err := strconv.ParseInt(c.Ctx.Input.Param(":id"), 10, 64)
+	if err != nil {
+		c.writeError(http.StatusBadRequest, "invalid id")
+		return
+	}
+
+	item, err := c.Service.EnsureRegistroGrado(id)
+	if err != nil {
+		c.writeError(mapReadError(err), err.Error())
+		return
+	}
+
+	c.writeJSON(http.StatusOK, item)
+}
+
 func (c *DiplomaDigitalController) Delete() {
 	id, err := strconv.ParseInt(c.Ctx.Input.Param(":id"), 10, 64)
 	if err != nil {
