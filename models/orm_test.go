@@ -40,11 +40,10 @@ func TestModelosRegistradosAutomaticamente(t *testing.T) {
 }
 
 func TestBootstrapResuelveRelacionesYNombresDeTabla(t *testing.T) {
-	MustInitORM()
 	db := sql.OpenDB(conectorORMPrueba{})
 	defer db.Close()
 
-	o, err := orm.NewOrmWithDB(defaultDriver, "modelos_registrados_test", db)
+	o, err := orm.NewOrmWithDB("postgres", "modelos_registrados_test", db)
 	if err != nil {
 		t.Fatalf("inicializar Beego ORM: %v", err)
 	}

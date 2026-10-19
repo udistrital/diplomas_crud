@@ -15,13 +15,10 @@ import (
 	"github.com/udistrital/utils_oas/v2/security"
 	"github.com/udistrital/utils_oas/v2/xray"
 
-	"github.com/udistrital/diplomas_crud/models"
 	_ "github.com/udistrital/diplomas_crud/routers"
 )
 
 func main() {
-	models.MustInitORM()
-
 	conn, err := database.BuildPostgresConnectionString()
 	if err != nil {
 		logs.Error("error consultando la cadena de conexión: %v", err)

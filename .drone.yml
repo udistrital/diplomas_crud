@@ -58,7 +58,7 @@ steps:
         - push
 
   - name: publish_to_ecr_release
-    image: plugins/ecr
+    image: plugins/ecr:20.18.8
     settings:
       create_repository: true
       region:
@@ -74,7 +74,7 @@ steps:
         - push
 
   - name: publish_to_ecr_prod
-    image: plugins/ecr
+    image: plugins/ecr:20.18.8
     settings:
       create_repository: true
       region:
