@@ -46,6 +46,8 @@ func (s CeremoniaEstudianteService) List(rawQuery string) ([]*models.CeremoniaEs
 		"id":                             "id",
 		"ceremonia_facultad_programa_id": "CeremoniaFacultadPrograma__Id",
 		"documento_digital_id":           "DocumentoDigital__Id",
+		"codigo_estudiante":              "DocumentoDigital__CodigoEstudiante",
+		"periodo_id":                     "DocumentoDigital__PeriodoId",
 		"CeremoniaFacultadPrograma__Id":  "CeremoniaFacultadPrograma__Id",
 		"DocumentoDigital__Id":           "DocumentoDigital__Id",
 		"activo":                         "activo",
