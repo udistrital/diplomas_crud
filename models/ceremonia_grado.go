@@ -9,6 +9,7 @@ import (
 func init() { orm.RegisterModel(new(CeremoniaGrado)) }
 
 type CeremoniaGrado struct {
+	PeriodoId                     *int64    `orm:"column(periodo_id);null" json:"periodo_id,omitempty"`
 	Id                            int64     `orm:"column(id);pk;auto" json:"id"`
 	FechaCeremonia                time.Time `orm:"column(fecha_ceremonia);type(date)" json:"fecha_ceremonia"`
 	HoraCeremonia                 *string   `orm:"column(hora_ceremonia);type(time);null" json:"hora_ceremonia,omitempty"`
