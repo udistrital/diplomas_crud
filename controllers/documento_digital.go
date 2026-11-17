@@ -182,3 +182,22 @@ func (c *DocumentoDigitalController) CrearDiploma() {
 
 	c.writeJSON(http.StatusCreated, item)
 }
+
+func (c *DocumentoDigitalController) RevertirFirma() {
+	id, err := strconv.ParseInt(c.Ctx.Input.Param(":id"), 10, 64)
+	if err != nil || id <= 0 {
+		c.writeError(http.StatusBadRequest, "invalid id")
+		return
+	}
+	payload, err := decodeBody[services.RevertirFirmaDocumentoInput](&c.Controller)
+	if err != nil {
+		c.writeError(http.StatusBadRequest, "invalid request body")
+		return
+	}
+	result, err := c.Workflow.RevertirFirma(id, payload)
+	if err != nil {
+		c.writeError(mapReadError(err), err.Error())
+		return
+	}
+	c.writeJSON(http.StatusOK, result)
+}

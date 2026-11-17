@@ -7,6 +7,8 @@ import (
 
 	"github.com/beego/beego/v2/client/orm"
 	beego "github.com/beego/beego/v2/server/web"
+
+	"github.com/udistrital/diplomas_crud/services"
 )
 
 type APIController struct {
@@ -38,6 +40,9 @@ func decodeBody[T any](controller *beego.Controller) (*T, error) {
 func mapReadError(err error) int {
 	if err == nil {
 		return http.StatusOK
+	}
+	if errors.Is(err, services.ErrFirmaConflict) {
+		return http.StatusConflict
 	}
 	if errors.Is(err, orm.ErrNoRows) {
 		return http.StatusNotFound

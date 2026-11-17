@@ -20,11 +20,25 @@ var firmaDocumentoFilterMap = map[string]string{
 }
 
 func (s FirmaDocumentoService) Create(input *models.FirmaDocumento) (*models.FirmaDocumento, error) {
-	input.Activo = true
 	o := orm.NewOrm()
-	id, err := o.Insert(input)
+	if input == nil || input.DocumentoDigital == nil {
+		return nil, ErrFirmaConflict
+	}
+	tx, err := o.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+	if err := bloquearFirmasDocumentoTx(tx, input.DocumentoDigital.Id, nil, false); err != nil {
+		return nil, err
+	}
+	input.Activo = true
+	id, err := tx.Insert(input)
 	if err != nil {
 		return nil, fmt.Errorf("insert firma_documento: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
 	}
 	input.Id = id
 	return s.GetByID(id)
@@ -63,34 +77,9 @@ func (s FirmaDocumentoService) List(rawQuery string) ([]*models.FirmaDocumento, 
 }
 
 func (s FirmaDocumentoService) Update(id int64, input *models.FirmaDocumento) (*models.FirmaDocumento, error) {
-	current, err := s.GetByID(id)
-	if err != nil {
-		return nil, err
-	}
-
-	current.DocumentoDigital = input.DocumentoDigital
-	current.FirmaFirmante = input.FirmaFirmante
-	current.RolFirmanteId = input.RolFirmanteId
-	current.DocumentoIdentidad = input.DocumentoIdentidad
-	current.Activo = input.Activo
-
-	o := orm.NewOrm()
-	if _, err := o.Update(current); err != nil {
-		return nil, fmt.Errorf("update firma_documento %d: %w", id, err)
-	}
-	return s.GetByID(id)
+	return nil, fmt.Errorf("%w: utilice el flujo transaccional de firma del documento", ErrFirmaConflict)
 }
 
 func (s FirmaDocumentoService) SoftDelete(id int64) error {
-	current, err := s.GetByID(id)
-	if err != nil {
-		return err
-	}
-
-	current.Activo = false
-	_, err = orm.NewOrm().Update(current, "activo", "fecha_modificacion")
-	if err != nil {
-		return fmt.Errorf("soft delete firma_documento %d: %w", id, err)
-	}
-	return nil
+	return fmt.Errorf("%w: utilice la reversión validada del MID", ErrFirmaConflict)
 }
