@@ -13,6 +13,7 @@ func init() {
 			beego.NSRouter("/:id", &controllers.DocumentoDigitalController{}, "get:GetOne;put:Put;delete:Delete"),
 			beego.NSRouter("/:id/estado", &controllers.DocumentoDigitalController{}, "post:CambiarEstado"),
 			beego.NSRouter("/:id/uuid", &controllers.DocumentoDigitalController{}, "put:ActualizarUUID"),
+			beego.NSRouter("/:id/firma/revertir", &controllers.DocumentoDigitalController{}, "post:RevertirFirma"),
 			beego.NSRouter("/:id/firma", &controllers.DocumentoDigitalController{}, "post:RegistrarFirma"),
 			beego.NSRouter("/:id/diploma", &controllers.DocumentoDigitalController{}, "post:CrearDiploma"),
 		),

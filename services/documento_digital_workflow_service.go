@@ -24,11 +24,13 @@ type ActualizarUUIDDocumentoInput struct {
 }
 
 type RegistrarFirmaDocumentoInput struct {
-	FirmaFirmanteId    *int64 `json:"firma_firmante_id,omitempty"`
-	RolFirmanteId      int64  `json:"rol_firmante_id"`
-	DocumentoIdentidad int64  `json:"documento_identidad"`
-	EstadoFirmadoId    *int64 `json:"estado_firmado_id,omitempty"`
-	Observacion        string `json:"observacion,omitempty"`
+	UUIDDocumento      *string `json:"uuid_documento,omitempty"`
+	FirmasEsperadas    []int64 `json:"firmas_esperadas"`
+	FirmaFirmanteId    *int64  `json:"firma_firmante_id,omitempty"`
+	RolFirmanteId      int64   `json:"rol_firmante_id"`
+	DocumentoIdentidad int64   `json:"documento_identidad"`
+	EstadoFirmadoId    *int64  `json:"estado_firmado_id,omitempty"`
+	Observacion        string  `json:"observacion,omitempty"`
 }
 
 type CrearDiplomaDigitalInput struct {
@@ -110,6 +112,20 @@ func (s DocumentoDigitalWorkflowService) RegistrarFirma(documentoID int64, input
 		return nil, fmt.Errorf("begin registrar firma: %w", err)
 	}
 
+	if err := bloquearFirmasDocumentoTx(tx, documentoID, input.FirmasEsperadas, false); err != nil {
+		_ = tx.Rollback()
+		return nil, err
+	}
+	if input.UUIDDocumento != nil {
+		if strings.TrimSpace(*input.UUIDDocumento) == "" {
+			_ = tx.Rollback()
+			return nil, ErrFirmaConflict
+		}
+		if _, err := tx.Raw("UPDATE documento_digital SET uuid_documento = ?, fecha_modificacion = now() WHERE id = ?", *input.UUIDDocumento, documentoID).Exec(); err != nil {
+			_ = tx.Rollback()
+			return nil, err
+		}
+	}
 	firmaID, err := upsertFirmaDocumentoTx(tx, documentoID, input)
 	if err != nil {
 		_ = tx.Rollback()
