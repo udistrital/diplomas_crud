@@ -9,11 +9,20 @@ import (
 
 type SimpleCRUDService[T any] struct {
 	FilterMap map[string]string
+	db        orm.Ormer
+}
+
+// ormer permite compartir la misma conexión en operaciones y pruebas aisladas.
+func (s SimpleCRUDService[T]) ormer() orm.Ormer {
+	if s.db != nil {
+		return s.db
+	}
+	return orm.NewOrm()
 }
 
 func (s SimpleCRUDService[T]) Create(input *T) (*T, error) {
 	setBoolField(input, "Activo", true)
-	o := orm.NewOrm()
+	o := s.ormer()
 	if _, err := o.Insert(input); err != nil {
 		return nil, fmt.Errorf("insert %T: %w", input, err)
 	}
@@ -25,7 +34,7 @@ func (s SimpleCRUDService[T]) Create(input *T) (*T, error) {
 }
 
 func (s SimpleCRUDService[T]) GetByID(id int64) (*T, error) {
-	o := orm.NewOrm()
+	o := s.ormer()
 	item := new(T)
 	if err := o.QueryTable(item).Filter("id", id).RelatedSel().One(item); err != nil {
 		return nil, fmt.Errorf("read %T %d: %w", item, id, err)
@@ -40,7 +49,7 @@ func (s SimpleCRUDService[T]) List(rawQuery string) ([]*T, error) {
 	}
 
 	model := new(T)
-	qs := orm.NewOrm().QueryTable(model)
+	qs := s.ormer().QueryTable(model)
 	for key, value := range filters {
 		ormField := key
 		if s.FilterMap != nil {
@@ -62,7 +71,7 @@ func (s SimpleCRUDService[T]) List(rawQuery string) ([]*T, error) {
 
 func (s SimpleCRUDService[T]) Update(id int64, input *T) (*T, error) {
 	setInt64Field(input, "Id", id)
-	o := orm.NewOrm()
+	o := s.ormer()
 	if _, err := o.Update(input); err != nil {
 		return nil, fmt.Errorf("update %T %d: %w", input, id, err)
 	}
@@ -75,7 +84,7 @@ func (s SimpleCRUDService[T]) SoftDelete(id int64) error {
 		return err
 	}
 	setBoolField(current, "Activo", false)
-	if _, err := orm.NewOrm().Update(current, "activo", "fecha_modificacion"); err != nil {
+	if _, err := s.ormer().Update(current, "activo", "fecha_modificacion"); err != nil {
 		return fmt.Errorf("soft delete %T %d: %w", current, id, err)
 	}
 	return nil

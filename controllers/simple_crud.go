@@ -36,7 +36,7 @@ func (c *SimpleCRUDController[T]) Post() {
 	}
 	item, err := c.Service.Create(payload)
 	if err != nil {
-		c.writeError(http.StatusInternalServerError, err.Error())
+		c.writeError(mapReadError(err), err.Error())
 		return
 	}
 	c.writeJSON(http.StatusCreated, item)
