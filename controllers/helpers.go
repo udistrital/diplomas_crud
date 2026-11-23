@@ -41,7 +41,7 @@ func mapReadError(err error) int {
 	if err == nil {
 		return http.StatusOK
 	}
-	if errors.Is(err, services.ErrFirmaConflict) {
+	if errors.Is(err, services.ErrFirmaConflict) || errors.Is(err, services.ErrCeremoniaConflict) {
 		return http.StatusConflict
 	}
 	if errors.Is(err, orm.ErrNoRows) {
